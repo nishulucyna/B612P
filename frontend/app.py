@@ -15,6 +15,9 @@ from copy import deepcopy
 from pathlib import Path
 from datetime import datetime
 
+import os
+
+import requests
 import streamlit as st
 
 # ── Path Setup ──────────────────────────────────────────────────────────────
@@ -328,11 +331,43 @@ def load_contract() -> dict:
         }
 
 def save_contract(state: dict):
+    """The orchestrator (backend/server.py) owns and persists the session; the UI no longer writes files."""
+    return None
+
+
+# ── Orchestrator API ─────────────────────────────────────────────────────────
+API_BASE = os.getenv("INCIDENT_API", "http://127.0.0.1:8000")
+
+
+def api_call(method: str, path: str, payload=None, timeout: float = 30):
+    """Returns (json, None) on success or (None, message). Never falls back to a mock."""
     try:
-        with open(CONTRACT_PATH, "w") as f:
-            json.dump(state, f, indent=2)
-    except Exception as e:
-        st.error(f"Could not save contract.json: {e}")
+        r = requests.request(method, API_BASE + path, json=payload, timeout=timeout)
+    except requests.RequestException as e:
+        return None, (f"Cannot reach the orchestrator at {API_BASE} ({e.__class__.__name__}). "
+                      "Start it with scripts/start_demo.bat (or: python -m backend.server).")
+    if r.status_code >= 400:
+        try:
+            detail = r.json().get("detail", r.text)
+        except Exception:
+            detail = r.text
+        return None, f"Server said {r.status_code}: {detail}"
+    return r.json(), None
+
+
+def apply_turn(resp, err):
+    """Fold one /api/*/turn response into the UI state."""
+    if err:
+        st.session_state.last_error = err
+        return
+    st.session_state.last_error = None
+    if resp.get("user_transcript"):
+        st.session_state.transcript.append({"role": "user", "text": resp["user_transcript"], "ts": ts()})
+    st.session_state.contract = resp["state"]
+    speech = resp.get("assistant_speech")
+    if speech:
+        mark = "✅ " if resp["state"].get("status") == "complete" else ""
+        st.session_state.transcript.append({"role": "ai", "text": mark + speech, "ts": ts()})
 
 def ts() -> str:
     return datetime.now().strftime("%H:%M:%S")
@@ -342,11 +377,49 @@ if "contract"    not in st.session_state: st.session_state.contract    = load_co
 if "transcript"  not in st.session_state: st.session_state.transcript  = []
 if "recording"   not in st.session_state: st.session_state.recording   = False
 if "edit_mode"   not in st.session_state: st.session_state.edit_mode   = False
+if "last_error"  not in st.session_state: st.session_state.last_error  = None
+
+if "hydrated" not in st.session_state:
+    st.session_state.hydrated = True
+    _state, _err = api_call("GET", "/api/state", timeout=5)
+    if _state:
+        st.session_state.contract = _state
+        _tr, _ = api_call("GET", "/api/transcript", timeout=5)
+        st.session_state.transcript = [
+            {"role": "ai" if m["role"] == "assistant" else "user", "text": m["text"], "ts": m["timestamp"][11:19]}
+            for m in (_tr or [])
+        ]
+    else:
+        st.session_state.last_error = _err
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### 🎙️ Voice Control")
     st.markdown('<hr style="border-color:#1e3a5f;margin:6px 0 14px;">', unsafe_allow_html=True)
+
+    # Live status of the orchestrator and the board
+    _health, _herr = api_call("GET", "/api/health", timeout=4)
+    if _herr:
+        st.markdown('<div style="background:#7f1d1d;color:#fff;padding:8px 10px;border-radius:8px;font-size:0.78rem;">'
+                    '🔴 Orchestrator offline</div>', unsafe_allow_html=True)
+    else:
+        _eng = _health.get("engine", {})
+        _board = _health.get("board") or {}
+        _stt, _llm = _eng.get("last_stt_backend"), _eng.get("last_llm_backend")
+        _npu_ok = bool(_board.get("stt_on_npu")) and bool(_board.get("llm_on_npu"))
+        _bad = _board.get("stt_warning") or _board.get("llm_warning")
+        if _bad:
+            _chip, _bg = "🔴 NPU problem: " + str(_bad)[:140], "#7f1d1d"
+        elif _npu_ok:
+            _chip, _bg = "🟢 Whisper + LLM running on the Snapdragon NPU", "#14532d"
+        elif _eng.get("mode") == "mock" or "mock" in (_stt, _llm):
+            _chip, _bg = "🟠 MOCK engine (not the board)", "#7c4a03"
+        else:
+            _chip, _bg = "🟠 Board not confirmed on NPU yet", "#7c4a03"
+        st.markdown(f'<div style="background:{_bg};color:#fff;padding:8px 10px;border-radius:8px;font-size:0.78rem;">'
+                    f'{_chip}<br><span style="opacity:.8">STT: {_stt or "-"} · LLM: {_llm or "-"}</span></div>',
+                    unsafe_allow_html=True)
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
     # Mic pulsing icon
     rec = st.session_state.recording
@@ -362,8 +435,11 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    if st.button("⏹ Stop Recording" if rec else "🎙️ Start Recording", use_container_width=True, key="mic_btn"):
-        st.session_state.recording = not st.session_state.recording
+    st.caption("Press Speak, talk, then pause. It stops by itself after ~1.5 s of silence.")
+    if st.button("🎙️ Speak", use_container_width=True, key="mic_btn", type="primary"):
+        with st.spinner("🔴 Listening - speak now. After you pause, the board transcribes and extracts the fields..."):
+            _resp, _err = api_call("POST", "/api/audio/turn", timeout=180)
+        apply_turn(_resp, _err)
         st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -407,20 +483,9 @@ with st.sidebar:
     if st.button("▶ Process Input", use_container_width=True, key="process_typed", type="primary"):
         txt = typed.strip()
         if txt:
-            st.session_state.transcript.append({"role": "user", "text": txt, "ts": ts()})
-            try:
-                from agent_brain import process_user_turn, mock_qualcomm_llm_engine
-                result = process_user_turn(txt, st.session_state.contract, mock_qualcomm_llm_engine)
-                st.session_state.contract = result
-                if result["status"] == "collecting" and result.get("next_clarification_prompt"):
-                    st.session_state.transcript.append({"role": "ai", "text": result["next_clarification_prompt"], "ts": ts()})
-                elif result["status"] == "complete":
-                    payload = result.get("tool_call_payload") or {}
-                    st.session_state.transcript.append({"role": "ai", "text": "✅ " + payload.get("summary_for_tts", "All fields captured. Ready for review."), "ts": ts()})
-                save_contract(st.session_state.contract)
-            except ImportError:
-                st.session_state.transcript.append({"role": "ai", "text": "⚠️ Backend not connected — transcript logged only.", "ts": ts()})
-                save_contract(st.session_state.contract)
+            with st.spinner("Processing on the board..."):
+                _resp, _err = api_call("POST", "/api/text/turn", {"text": txt}, timeout=180)
+            apply_turn(_resp, _err)
             st.rerun()
         else:
             st.warning("Please type something first.")
@@ -435,6 +500,9 @@ contract = st.session_state.contract
 fields   = contract.get("fields", {})
 status   = contract.get("status", "collecting")
 missing  = set(contract.get("missing_mandatory_fields", []))
+
+if st.session_state.get("last_error"):
+    st.error(st.session_state.last_error)
 
 # ── Top Banner ───────────────────────────────────────────────────────────────
 st.markdown(f"""
@@ -630,30 +698,39 @@ with acol1:
         btn_label = "✅ Confirm & Submit Incident Report" if can_submit else "🔒 Submit (Complete all mandatory fields first)"
         if st.button(btn_label, use_container_width=True, disabled=not can_submit,
                      type="primary" if can_submit else "secondary", key="submit_btn"):
-            final = deepcopy(st.session_state.contract)
-            final["status"] = "submitted"
-            st.session_state.contract = final
-            save_contract(final)
-            st.session_state.transcript.append({"role": "ai", "text": "🔵 Incident report submitted successfully.", "ts": ts()})
-            st.balloons()
+            _resp, _err = api_call("POST", "/api/submit",
+                                   {"fields": st.session_state.contract.get("fields", {})}, timeout=15)
+            if _err:
+                st.session_state.last_error = _err
+            else:
+                st.session_state.last_error = None
+                st.session_state.contract = _resp["state"]
+                st.session_state.transcript.append({"role": "ai", "text": "🔵 Incident report submitted successfully.", "ts": ts()})
+                st.balloons()
             st.rerun()
 
 with acol2:
     if st.button("🔄 Sync File", use_container_width=True, key="sync_btn"):
-        st.session_state.contract = load_contract()
+        _state, _err = api_call("GET", "/api/state", timeout=5)
+        if _err:
+            st.session_state.last_error = _err
+        else:
+            st.session_state.last_error = None
+            st.session_state.contract = _state
         st.rerun()
 
 with acol3:
     if st.button("↺ Reset All", use_container_width=True, key="reset_btn"):
-        st.session_state.contract = {
-            "session_id": str(uuid.uuid4())[:8], "status": "collecting",
-            "missing_mandatory_fields": list(MANDATORY_FIELDS),
-            "next_clarification_prompt": "Please describe what happened, where, and when.",
-            "fields": {k: None for k in FIELD_META},
-        }
-        st.session_state.transcript = []
-        st.session_state.recording  = False
-        save_contract(st.session_state.contract)
+        _resp, _err = api_call("POST", "/api/reset", timeout=15)
+        if _err:
+            st.session_state.last_error = _err
+        else:
+            st.session_state.last_error = None
+            st.session_state.contract = _resp["state"]
+            st.session_state.transcript = []
+            st.session_state.recording = False
+            if _resp.get("assistant_speech"):
+                st.session_state.transcript.append({"role": "ai", "text": _resp["assistant_speech"], "ts": ts()})
         st.rerun()
 
 # ── Tool Call Preview (collapsible, only when complete/submitted) ─────────────

@@ -11,3 +11,8 @@ httpx>=0.27
 # Optional: offline CPU Whisper for the mock STT fallback (needs a LOCAL model dir,
 # set MOCK_WHISPER_MODEL_DIR). Not required for text-driven demos/tests.
 # faster-whisper
+
+# Live demo on the laptop: microphone capture, offline text-to-speech, UI -> orchestrator calls
+sounddevice>=0.4
+pyttsx3>=2.90
+requests>=2.31

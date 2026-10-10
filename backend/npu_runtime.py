@@ -71,10 +71,10 @@ def _post(path: str, body: bytes, content_type: str, timeout: float) -> str:
 _warned_not_on_npu = False
 
 
-def npu_status() -> Optional[dict]:
+def npu_status(timeout: float = 5.0) -> Optional[dict]:
     """The board's /health JSON (also when it answers 503), or None if unreachable."""
     try:
-        with urllib.request.urlopen(BASE_URL + "/health", timeout=5) as resp:
+        with urllib.request.urlopen(BASE_URL + "/health", timeout=timeout) as resp:
             return json.loads(resp.read().decode("utf-8", errors="replace"))
     except urllib.error.HTTPError as e:
         try:

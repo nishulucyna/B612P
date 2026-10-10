@@ -108,12 +108,14 @@ class GenieEngine @JvmOverloads constructor(
             throw IllegalStateException(status)
         }
         val isIncidentExtraction = IncidentJson.isExtractionPrompt(prompt)
-        val (text, profile) = complete(
-            model,
-            prompt,
-            MAX_NEW_TOKENS,
-            if (isIncidentExtraction) IncidentJson.GRAMMAR else null,
-        )
+        val grammar = if (isIncidentExtraction) IncidentJson.GRAMMAR else null
+        val (text, profile) = try {
+            complete(model, prompt, MAX_NEW_TOKENS, grammar)
+        } catch (t: Throwable) {
+            // One automatic retry from a clean context (complete() resets it first).
+            Log.w(TAG, "LLM call failed (${t.message}); retrying once from a clean context")
+            complete(model, prompt, MAX_NEW_TOKENS, grammar)
+        }
         if (profile != null) {
             Log.i(
                 TAG,
@@ -131,6 +133,9 @@ class GenieEngine @JvmOverloads constructor(
         grammar: String? = null,
     ): Pair<String, ProfilingData?> =
         runBlocking {
+            // Every prompt is self-contained. GenieX otherwise keeps the KV cache of earlier calls and
+            // eventually fails with "context window exhausted" (seen after a few turns on the board).
+            resetContext(model)
             val templated = model
                 .applyChatTemplate(arrayOf(ChatMessage("user", prompt)), null, false)
                 .getOrThrow()
@@ -156,6 +161,14 @@ class GenieEngine @JvmOverloads constructor(
             failure?.let { throw it }
             Pair(out.toString().trim(), profile)
         }
+
+    private suspend fun resetContext(model: LlmWrapper) {
+        try {
+            model.reset()
+        } catch (t: Throwable) {
+            Log.w(TAG, "LLM context reset failed: $t")
+        }
+    }
 
     private class Placement(val usesHtpDevice: Boolean, val htpMiB: Double, val cpuMiB: Double)
 

@@ -260,10 +260,25 @@ def create_app(contract_path: Optional[Path] = None) -> FastAPI:
         except runtime.EngineUnavailable as exc:
             raise HTTPException(503, str(exc))
 
+    board_cache: Dict[str, Any] = {"t": 0.0, "value": None}
+
+    def board_status() -> Optional[Dict[str, Any]]:
+        """What the HDK bridge itself reports (is each model on the NPU?). Cached ~3 s; None if no bridge."""
+        now = time.monotonic()
+        if now - board_cache["t"] > 3.0:
+            try:
+                from backend import npu_runtime
+                board_cache["value"] = npu_runtime.npu_status(timeout=2.0)
+            except Exception:
+                board_cache["value"] = None
+            board_cache["t"] = now
+        return board_cache["value"]
+
     @app.get("/api/health")
     def health() -> Dict[str, Any]:
         st = orch.get_state()
-        return {"ok": True, "session_id": st["session_id"], "status": st["status"], "engine": runtime.status()}
+        return {"ok": True, "session_id": st["session_id"], "status": st["status"],
+                "engine": runtime.status(), "board": board_status()}
 
     @app.get("/api/state")
     def get_state() -> Dict[str, Any]:

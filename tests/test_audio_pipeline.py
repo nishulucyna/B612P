@@ -98,3 +98,38 @@ def test_speak_tts_uses_offline_engine(monkeypatch):
     assert spoken == [
         "Testing Qualcomm offline audio pipeline. Water leak detected."
     ]
+
+
+class _NoisyRoomStream:
+    """0.6 s of room noise (RMS 600, above the old fixed threshold of 500), speech, then a pause."""
+
+    def __init__(self, callback, **kwargs):
+        self.callback = callback
+
+    def __enter__(self):
+        block = audio_pipeline.BLOCK_SIZE
+        for level, count in ((600, 6), (4_000, 8), (600, 40)):
+            for _ in range(count):
+                self.callback(array("h", [level] * block), block, None, None)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
+
+
+class _NoisyRoomSoundDevice:
+    InputStream = _NoisyRoomStream
+
+
+def test_recording_stops_after_a_pause_even_in_a_noisy_room(monkeypatch, tmp_path):
+    monkeypatch.setitem(__import__("sys").modules, "sounddevice", _NoisyRoomSoundDevice)
+    monkeypatch.setattr(audio_pipeline, "SILENCE_SECONDS", 0.0)  # the fake stream is not real time
+
+    result = audio_pipeline.record_audio(str(tmp_path / "noisy.wav"), max_seconds=15)
+
+    with wave.open(result, "rb") as wav_file:
+        frames = wav_file.getnframes()
+    block = audio_pipeline.BLOCK_SIZE
+    # It must stop at the first pause, long before the 40 quiet blocks that were queued.
+    assert frames < (6 + 8 + 5) * block
+    assert frames >= (6 + 8) * block

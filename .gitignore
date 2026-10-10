@@ -56,3 +56,5 @@ qidk/
 /qairt_sdk/
 /whisper_build/
 *.gguf
+runtime_state.json
+temp_audio/

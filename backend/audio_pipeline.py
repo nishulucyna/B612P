@@ -8,6 +8,7 @@ so importing the module does not require audio hardware.
 from __future__ import annotations
 
 import array
+from collections import deque
 import threading
 import time
 import wave
@@ -20,7 +21,12 @@ CHANNELS = 1
 SAMPLE_WIDTH_BYTES = 2
 BLOCK_SIZE = 1_600
 SILENCE_SECONDS = 1.5
-RMS_THRESHOLD = 500
+RMS_THRESHOLD = 350            # minimum level that counts as speech
+MAX_RMS_THRESHOLD = 3000       # never demand more than this, even in a loud room
+NOISE_MARGIN = 3.0             # speech must be this many times louder than the room
+CALIBRATION_SECONDS = 0.5      # measure the room noise at the start of each recording
+MIN_SPEECH_BLOCKS = 2          # consecutive loud blocks needed (ignores single spikes)
+QUIET_FRACTION = 0.85          # a pause = this share of the last SILENCE_SECONDS is quiet (ignores clicks)
 
 
 def _rms_int16(data: bytes) -> float:
@@ -77,9 +83,18 @@ def record_audio(
     output.parent.mkdir(parents=True, exist_ok=True)
     captured = bytearray()
     speech_detected = False
-    silence_started: float | None = None
     started_at = time.monotonic()
     stop_thread: threading.Thread | None = None
+    # The fixed threshold alone fails on noisy microphones (a laptop mic can sit above it all the
+    # time, so a pause is never detected). Measure the room first and adapt.
+    threshold = float(RMS_THRESHOLD)
+    calibration_levels: list[float] = []
+    calibration_samples = 0
+    calibrating = True
+    speech_blocks = 0
+    # Pause detection counts audio blocks, not wall-clock time, and tolerates stray clicks or fan noise.
+    window_blocks = max(1, int(SILENCE_SECONDS * SAMPLE_RATE / BLOCK_SIZE))
+    recent_quiet: deque[bool] = deque(maxlen=window_blocks)
 
     try:
         with sd.InputStream(
@@ -106,12 +121,24 @@ def record_audio(
                     continue
 
                 captured.extend(block)
-                if _rms_int16(block) >= RMS_THRESHOLD:
-                    speech_detected = True
-                    silence_started = None
-                elif speech_detected:
-                    silence_started = silence_started or time.monotonic()
-                    if time.monotonic() - silence_started >= SILENCE_SECONDS:
+                level = _rms_int16(block)
+                if calibrating:
+                    calibration_levels.append(level)
+                    calibration_samples += len(block) // SAMPLE_WIDTH_BYTES
+                    if calibration_samples >= CALIBRATION_SECONDS * SAMPLE_RATE:
+                        noise_floor = sorted(calibration_levels)[len(calibration_levels) // 2]
+                        threshold = min(max(RMS_THRESHOLD, noise_floor * NOISE_MARGIN), MAX_RMS_THRESHOLD)
+                        calibrating = False
+                    continue
+                if level >= threshold:
+                    speech_blocks += 1
+                    if speech_blocks >= MIN_SPEECH_BLOCKS:
+                        speech_detected = True
+                else:
+                    speech_blocks = 0
+                if speech_detected:
+                    recent_quiet.append(level < threshold)
+                    if len(recent_quiet) == window_blocks and sum(recent_quiet) >= QUIET_FRACTION * window_blocks:
                         break
     except OSError as exc:
         raise RuntimeError(f"Unable to access the microphone: {exc}") from exc
