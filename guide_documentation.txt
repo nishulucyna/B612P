@@ -1,0 +1,1805 @@
+Overview
+========
+
+The Qualcomm Innovators Development Kit (QIDK) is designed to empower developers to build, test, and scale applications on Snapdragon® mobile platforms—ranging from on device AI workloads to low level system exploration.
+QIDK combines powerful hardware, comprehensive software tools, and developer support, enabling students, academic researchers, and developers to prototype a wide range of applications.
+These include on device AI solutions, system level software such as device drivers, and hands‑on exploration of the internal architecture of modern Snapdragon processors that power today’s flagship smartphones.
+Built on premium Snapdragon system on chip (SoC) platforms, QIDK provides access to the same features, capabilities, and performance characteristics relied upon by leading device manufacturers—now made available to the broader developer community.
+
+.. image:: /_static/QIDK_Kit.jpg
+   :width: 500px
+   :align: center
+
+Key Highlights
+--------------
+- Rapid transition from idea to prototype across Snapdragon powered devices
+- Edge AI development on Snapdragon platforms with CPU, GPU, and NPU support
+- Hardware Expansion Cards for real-world prototyping and diverse use cases.
+
+  - **Camera Card** – Advanced imaging & video capabilities; rear-facing sensor
+  - **Sensor Card** – Pressure, Hall, Proximity, Magnetometer, Accelerometer, Gyroscope
+  - **Display Card** – FHD+ LCD Capacitive Touch
+  - **Audio & Controls** – Extended audio connectors; volume & power buttons
+
+- On device deployment of modern generative AI models, including LLMs and diffusion based image generation models
+- Easy onboarding of pre optimized models from Qualcomm AI Hub
+- End-to-End AI Solutions Available on QIDK GitHub.
+
+  - **Vision**: Object detection, image enhancement, super resolution, pose estimation
+  - **NLP**: Sentiment analysis, question answering, automatic speech recognition
+  - **Generative AI**: LLM-based chat applications and diffusion-based image generation
+
+
+Supported Snapdragon Platforms
+------------------------------
+QIDK is built on **premium Snapdragon® mobile platforms** and supports development and deployment across the **Snapdragon 8 series**, including recent and current generations such as:
+
+- Snapdragon® 8 Elite Gen 5
+- Snapdragon® 8 Elite Gen 4 
+- Snapdragon® 8 Gen 3
+- Snapdragon® 8 Gen 2
+
+These platforms provide access to Snapdragon’s heterogeneous compute architecture, including CPU, GPU, and NPU, enabling efficient on-device AI execution.
+
+Supported Operating System
+--------------------------
+QIDK runs only on **Android** operating system, providing a application development environment for building, testing, and deploying on-device AI applications.
+
+Learning Resources
+------------------
+
+**Video Tutorials**
+
+.. grid:: 3
+   :gutter: 3
+
+   .. grid-item-card:: Hardware Development Kit Unboxing
+      :img-top: /_static/thumbnails/youtube_unboxing.jpg
+      :link: https://www.youtube.com/watch?v=59kN40__apo
+      :link-type: url
+
+      Unboxing and overview of the QIDK hardware kit.
+
+   .. grid-item-card:: AI on QIDK
+      :img-top: /_static/thumbnails/academy_qidk_thumb.png
+      :link: https://academy.qualcomm.com/course-catalog/AI-on-QIDK
+      :link-type: url
+
+      Structured course with hands-on labs on Qualcomm Academy.
+
+   .. grid-item-card:: AI Upskilling Certificate
+      :img-top: /_static/thumbnails/academy_cert_thumb.png
+      :link: https://academy.qualcomm.com/course-catalog/AI-Upskilling-Certificate-Technical-Foundations
+      :link-type: url
+
+      Technical Foundations certificate program on Qualcomm Academy.
+
+**Documentation**
+
+.. grid:: 2
+   :gutter: 3
+
+   .. grid-item-card:: QAIRT Documentation
+      :img-top: /_static/thumbnails/qairt_thumb.png
+      :link: https://docs.qualcomm.com/doc/80-63442-10/topic/general_overview.html
+      :link-type: url
+
+      Qualcomm AI Runtime (QAIRT) reference documentation.
+
+   .. grid-item-card:: AIMET Documentation
+      :img-top: /_static/thumbnails/aimet_thumb.png
+      :link: https://quic.github.io/aimet-pages/releases/latest/overview/index.html
+      :link-type: url
+
+      AI Model Efficiency Toolkit (AIMET) documentation and overview.
+
+**Open-Source Solutions**
+
+.. grid:: 2
+   :gutter: 3
+
+   .. grid-item-card:: Qualcomm Sample AI/ML E2E Solutions
+      :img-top: /_static/thumbnails/github_solutions_thumb.png
+      :link: https://github.com/qualcomm/qidk/tree/master/Solutions
+      :link-type: url
+
+      Open-source Vision, NLP, and GenAI E2E apps on GitHub.
+
+   .. grid-item-card:: Qualcomm Sample GenAI E2E Solutions
+      :img-top: /_static/thumbnails/github_genai_thumb.png
+      :link: https://github.com/qualcomm/qidk/tree/master/GenAI-Solutions
+      :link-type: url
+
+      Generative AI solutions including LLMs and diffusion models on GitHub.
+
+
+Support
+-------
+For bug reports and feature requests, raise an issue on our `GitHub Issues <https://github.com/qualcomm/qidk/issues>`_ page.
+
+For questions or suggestions, reach out to us at `qidk@qti.qualcomm.com <mailto:qidk@qti.qualcomm.com>`_.
+
+Community
+---------
+Built something with QIDK? Share your solutions on GitHub and tag them with **#QIDK** so the community can discover and learn from your work.
+
+Share your experience on LinkedIn using **#QIDK** to connect with fellow developers and the Qualcomm team.
+
+**Community Projects**
+
+- `IIIT Hyderabad — ESW M2025 QIDK <https://pl-git.iiit.ac.in/spcrc/iiith-esw-m2025-qidk>`_
+
+============================
+Quick Start Guide
+============================
+
+Prerequisites
+-------------
+
+- **OS:** Ubuntu 22.04 (host machine)
+- **Internet access:** Required to download QAIRT SDK and Android NDK during build
+- **Disk space:** At least 18 GB free on the Docker storage partition
+
+This guide covers:
+
+1. Setting up the QAIRT Docker environment on a Ubuntu host
+2. Building and deploying QIDK solutions on a Snapdragon device
+
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+
+----
+
+Part 1: Docker Environment Setup
+=================================
+
+The Docker image provides a ready-to-use environment with the QAIRT SDK,
+Android NDK, and Python ML frameworks (TensorFlow, PyTorch, ONNX) all
+pre-installed and configured.
+
+Step 1 — Clone the Repository
+------------------------------
+
+::
+
+   git clone https://github.com/quic/qidk.git
+   cd qidk/Tools/qairt_docker
+
+Step 2 — Run the Setup Script
+------------------------------
+
+::
+
+   ./run_qairt_docker.sh
+
+The script handles everything automatically:
+
+- **First run:** builds the Docker image, downloading QAIRT SDK v2.47.0.260601
+  and Android NDK r26c inside the image. Takes 30+ minutes depending on internet speed.
+- **Subsequent runs:** detects the existing image and skips the build. Starts
+  in seconds.
+- **Version change:** if the QAIRT SDK version is updated in the dockerfile,
+  the script detects the mismatch and rebuilds automatically.
+
+**Script options:**
+
+.. code-block:: text
+
+   -i, --image     NAME    Docker image name          (default: qairt)
+   -c, --container NAME    Docker container name      (default: qairt_container)
+   -m, --mount     PATH    Host directory to expose   (default: /local/)
+   -t, --target    PATH    Path inside container      (default: /local/)
+   --rebuild               Force rebuild of the image
+   --no-cache              Force full rebuild with no Docker layer cache
+
+Step 3 — Inside the Container
+------------------------------
+
+The shell opens automatically in the ``qidk/`` directory. The environment
+is fully activated — no manual steps needed:
+
+- Python virtual environment is active
+- ``QAIRT_SDK_ROOT`` points to the installed QAIRT SDK
+- ``ANDROID_NDK_ROOT`` points to Android NDK r26c
+- All QAIRT tools are available on ``PATH``
+
+Verify::
+
+   echo $QAIRT_SDK_ROOT
+   qnn-net-run --version
+
+Type ``exit`` to leave the container. Run ``./run_qairt_docker.sh`` again
+at any time to re-enter.
+
+----
+
+Part 2: Building and Deploying Solutions
+=========================================
+
+QIDK provides ready-to-use Android solutions under the ``Solutions/`` and
+``GenAI-Solutions/`` directories. Each solution targets Snapdragon hardware
+and uses the QAIRT SDK for on-device AI inference.
+
+Overview
+--------
+
+The general workflow for any solution is:
+
+1. **Generate models** — convert and quantize AI/ML models to DLC format inside the Docker container
+2. **Resolve dependencies** — set up the Android project with required SDK libraries
+3. **Build the APK** — compile using Android Studio
+4. **Deploy to device** — install and run on a Snapdragon device
+
+Available Solutions
+-------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 65
+
+   * - Solution
+     - Description
+   * - VisionSolution1–3
+     - Object detection and classification using QAIRT Java API
+   * - VisionSolution4-PoseEstimation
+     - Human pose estimation using YoloNAS + HRNET (native C++ API)
+   * - NLP solutions
+     - Natural language processing using QAIRT native API
+   * - GenAI-Solutions
+     - Generative AI apps — LLaMA, Whisper, Stable Diffusion
+
+Step 1 — Generate Model Files (inside Docker)
+----------------------------------------------
+
+Each solution includes a ``Generate_models/`` directory with a Jupyter notebook
+to convert and quantize models to DLC format.
+
+Inside the container::
+
+   cd Solutions/<SolutionName>/Generate_models
+   jupyter notebook --ip=0.0.0.0 --no-browser --allow-root
+
+Open the notebook in your browser, set any required dataset paths, and run
+all cells. The notebook generates the ``.dlc`` model files and copies them
+to ``app/src/main/assets/`` automatically.
+
+Step 2 — Resolve Android Project Dependencies
+----------------------------------------------
+
+On the **host machine**, set ``QAIRT_SDK_ROOT`` to the SDK path::
+
+   export QAIRT_SDK_ROOT=/path/to/qairt/2.47.0.260601
+
+Navigate to the solution and run::
+
+   cd Solutions/<SolutionName>
+   bash resolveDependencies.sh
+
+This downloads OpenCV, copies QAIRT headers and the required ``.so`` libraries
+for the target device into the Android project.
+
+Step 3 — Build the APK
+-----------------------
+
+Open the solution in Android Studio::
+
+   File → Open → Solutions/<SolutionName>
+
+1. Wait for Gradle sync to complete
+2. Select **Build → Make Project**
+3. Output APK: ``app/build/outputs/apk/debug/app-debug.apk``
+
+Step 4 — Prepare the Device
+----------------------------
+
+Connect the Snapdragon device via USB and run::
+
+   adb disable-verity
+   adb reboot
+   adb root
+   adb remount
+   adb shell setenforce 0
+
+.. note::
+
+   ``setenforce 0`` sets SELinux to permissive mode, required to enable the
+   HTP (DSP) runtime. Without this the app falls back to CPU.
+
+Step 5 — Install and Run
+-------------------------
+
+Install the APK::
+
+   adb install -r -t app/build/outputs/apk/debug/app-debug.apk
+
+Once installed, open the app directly from the device app drawer.
+On first launch, grant the required permissions (camera, storage) when prompted.
+
+Runtime Selection
+-----------------
+
+All solutions support switching between runtimes from within the app UI:
+
+- **CPU** — runs on the application processor, baseline performance
+- **GPU** — uses the Adreno GPU, faster than CPU
+- **DSP (HTP)** — uses the Hexagon processor, best performance and efficiency
+
+On Snapdragon 8 Elite (SM8750), the DSP (HTP V79) runtime delivers the
+lowest latency and highest power efficiency.
+
+Troubleshooting
+---------------
+
+**DSP runtime not detected**
+   Ensure ``setenforce 0`` is applied after every reboot::
+
+      adb root && adb shell setenforce 0
+
+   Check logcat for FastRPC errors::
+
+      adb logcat | grep -i "fastrpc\|dsp\|htp"
+
+**Build fails with missing .so files**
+   Re-run ``resolveDependencies.sh`` and confirm ``QAIRT_SDK_ROOT`` is set to
+   version 2.47.0.260601 or later.
+
+**App crashes on launch**
+   Verify the ``.dlc`` model files are present in ``app/src/main/assets/``
+   and were copied correctly by the model generation notebook.
+
+Setup & Installation
+====================
+
+Prerequisites
+-------------
+- Ubuntu 22.04
+- Internet access
+
+QIDK Repository
+------------------
+Clone QIDK into your Ubuntu 22.04 workspace.
+
+.. code-block:: bash
+
+   git clone https://github.com/quic/qidk.git
+
+QAIRT SDK
+-------------
+The Docker setup automatically installs **QAIRT SDK v2.47.0.260601** by default.
+
+To use a different version, download it from the `Qualcomm AI Runtime Community <https://softwarecenter.qualcomm.com/catalog/item/Qualcomm_AI_Runtime_Community>`_ portal,
+extract the package, and set ``QAIRT_SDK_ROOT`` before running the script:
+
+.. code-block:: bash
+
+   export QAIRT_SDK_ROOT=<absolute_path_to_extracted_sdk>
+
+Docker Setup and Installation
+-----------------------------
+
+The ``run_qairt_docker.sh`` script provides a ready-to-use development environment
+with the QAIRT SDK, Android NDK, and Python ML frameworks (TensorFlow, PyTorch, ONNX)
+pre-installed and configured.
+
+Navigate to the Docker directory inside the cloned repository::
+
+   cd qidk/Tools/qairt_docker
+
+Run the setup script
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+   ./run_qairt_docker.sh
+
+The script handles everything automatically:
+
+- **First run:** builds the Docker image, downloading QAIRT SDK v2.47.0.260601
+  and Android NDK r26c. Takes 30+ minutes depending on internet speed.
+- **Subsequent runs:** detects the existing image and skips the build. Starts in seconds.
+- **Version change:** if the QAIRT SDK version is updated in the dockerfile,
+  the script detects the mismatch and rebuilds automatically.
+
+**Script options:**
+
+.. code-block:: text
+
+   -i, --image     NAME    Docker image name          (default: qairt)
+   -c, --container NAME    Docker container name      (default: qairt_container)
+   -m, --mount     PATH    Host directory to expose   (default: /local/)
+   -t, --target    PATH    Path inside container      (default: /local/)
+   --rebuild               Force rebuild of the image
+   --no-cache              Force full rebuild with no Docker layer cache
+
+Inside the Container
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The shell opens automatically in the ``qidk/`` directory with the environment
+fully activated — no manual steps needed:
+
+- Python virtual environment is active
+- ``QAIRT_SDK_ROOT`` points to the installed QAIRT SDK
+- ``ANDROID_NDK_ROOT`` points to Android NDK r26c
+- All QAIRT tools are available on ``PATH``
+
+Verify the setup::
+
+   echo $QAIRT_SDK_ROOT
+   qnn-net-run --version
+
+Type ``exit`` to leave the container. Run ``./run_qairt_docker.sh`` again at any
+time to re-enter.
+
+Installing Additional Python Packages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each model solution may require additional Python packages. Install them inside the container based on the requirements of the model you are working with:
+
+.. code-block:: bash
+
+   pip install <package_name>
+
+
+
+Stopping and Removing the Container (Optional)
+-----------------------------------------------
+
+These steps are **optional** and only required if you want to clean up Docker resources.
+
+List all containers
+~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   docker ps -a
+
+Stop a container
+~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   docker stop <CONTAINER_ID>
+
+Remove the container
+~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   docker rm <CONTAINER_ID>
+
+
+
+Removing the Docker Image (Optional)
+------------------------------------
+
+List all images
+~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   docker images
+
+Remove the image
+~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   docker rmi -f <IMAGE_ID>
+
+Snapdragon SoC Architecture
+==============================================
+
+Snapdragon Mobile Processor is a heterogeneous SoC where CPU, GPU, NPU, ISP and connectivity are tightly coupled through high bandwidth interconnects to deliver performance per watt and real time experiences.
+
+.. image:: /_static/Qualcomm_SoC_Archiecture.jpg
+   :width: 350px
+   :align: center
+
+1. Qualcomm® Oryon™ CPU
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Role: General purpose processing & system control
+
+Qualcomm Oryon CPU is a custom-built CPU architecture designed by Qualcomm for high performance and high efficiency mobile computing. It handles:
+
+- Application execution (Android framework, apps, services)
+- System scheduling and OS control
+- Control logic for camera, AI, graphics, and connectivity pipelines
+
+2. Qualcomm® Adreno™ GPU
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Role: Graphics rendering & parallel compute
+
+The Adreno GPU is Qualcomm’s in house graphics processor, responsible for:
+
+- UI composition and display rendering
+- Advanced mobile gaming (Vulkan, OpenGL ES)
+- GPU compute for graphics adjacent workloads
+- Hardware accelerated ray tracing and gaming features
+
+3. Qualcomm® Hexagon™ NPU
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Role: AI & Machine Learning acceleration
+
+The Hexagon NPU (Neural Processing Unit) is Qualcomm’s dedicated AI engine, optimized for:
+
+Neural network inference
+- On device generative AI
+- Computer vision and speech processing
+- Sensor driven AI workloads
+
+Qualcomm explains that Hexagon combines tensor, vector, and scalar accelerators in a fused architecture, enabling efficient execution of AI models with lower power consumption compared to CPU or GPU execution.
+
+4. Qualcomm® Spectra™ ISP (Image Signal Processor)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Role: Camera & Imaging Processing
+
+The Spectra ISP is Qualcomm’s dedicated camera processing block. It processes raw sensor data and performs:
+
+- Demosaicing and noise reduction
+- Auto exposure, auto white balance, autofocus
+- Multi frame HDR and Night Vision
+- AI assisted image enhancement (via Hexagon)
+
+5. Qualcomm® Sensing Hub
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Role: Low-power always-on contextual awareness & sensor processing
+
+The Qualcomm Sensing Hub is a dedicated, low-power subsystem designed to efficiently process continuous data streams from various sensors and peripherals without waking the main CPU. It handles:
+
+- Always-on sensor algorithms (e.g., pedometer, activity recognition, motion and elevator detection)
+- Always-on audio processing for seamless voice wake-up, keyword detection, and audio context awareness
+- Always-Sensing Camera (ASC) workloads for ultra-low-power face detection and vision tasks
+- Supplying machine learning inputs and contextual data to proactive on-device AI assistants
+
+6. Qualcomm® Connectivity Subsystem
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Role: Connectivity
+
+Snapdragon mobile platforms integrate cellular and short range connectivity directly into the SoC through the Snapdragon Modem RF system and FastConnect™ subsystems. 
+
+- Cellular: 5G modem and RF transceivers
+- FastConnect subsystem: Wi Fi, Bluetooth, and Ultra Wideband (UWB)
+
+Qualcomm AI Ecosystem
+------------------------------------
+
+The Qualcomm AI software stack relies on two primary ecosystems:
+
+* Qualcomm AI Runtime (QAIRT) provides multiple paths through that flow. The right path depends on the model type, how much hardware control is required, and how much accuracy recovery work is needed after quantization.
+
+* AI Model Efficiency Toolkit (AIMET) for advanced model optimization during the training phase
+
+QAIRT
+~~~~~~~~~~~~
+
+This is the on-device execution software (C++ / Java APIs) that actually runs the neural network on the Snapdragon platform. It abstracts the complexities of the underlying silicon (Hexagon NPU/HTP, Adreno GPU, Kryo CPU). It provides three distinct deployment paths (SNPE, QNN, Genie) depending on your model type and the level of hardware control you need.
+
+SNPE (Snapdragon Neural Processing Engine)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* **Purpose and Importance:** It provides a highly abstracted, user-friendly interface that manages memory allocation, graph execution, and hardware delegation automatically across different hardware blocks.
+* **When to use it:** Use SNPE for fast, straightforward integration of common Deep Learning workloads (like standard vision or audio classifiers). It uses the unified ``.dlc`` format and requires significantly less low-level tuning from the developer.
+
+QNN (Qualcomm Neural Network)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+* **Purpose and Importance:** It provides explicit, direct control over the underlying hardware—especially the Hexagon Tensor Processor (HTP)—which higher-level APIs abstract away. 
+* **When to use it:** Use QNN when you require absolute maximum performance. It is necessary when you must squeeze out every drop of efficiency, write custom hardware operations (custom ops), manage complex multi-context execution, or perform deep, layer-by-layer profiling directly on the hardware.
+
+Genie (Generative AI Inference Engine)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* **Purpose and Importance:** The specialized runtime pipeline for Large Language Models (LLMs) and Generative AI workloads. Genie is a purpose-built abstraction on top of QNN specifically designed to manage autoregressive workloads efficiently.
+* **When to use it:** Use Genie when deploying text-generation and chat applications. It handles the complex logic of token generation and KV-caching directly, relying on the QNN HTP backend for the heavy computational lifting without requiring you to write that logic from scratch.
+
+**QAIRT SDK documentation**: https://docs.qualcomm.com/doc/80-63442-10/topic/general_overview.html#supported-snapdragon-devices
+
+AIMET
+~~~~~~~~~~~~
+
+**Purpose and Importance:**
+AIMET is an open-source model optimization library designed to integrate directly with ML training frameworks such as **PyTorch** and **TensorFlow**. Modern hardware accelerators deliver the best performance and power efficiency when running low-precision integer computations, especially **INT8**. However, converting a high-precision **FP32** model to INT8 often results in significant accuracy degradation.
+
+AIMET addresses this challenge by enabling model compression and quantization while preserving model accuracy as much as possible. It serves as a bridge between high-accuracy training workflows and efficient on-device deployment.
+
+**Why to use it:**
+
+* Restores accuracy lost during standard post-training quantization
+* Enables advanced optimization techniques such as Quantization-Aware Training (QAT), AdaRound, and Cross-Layer Equalization (CLE)
+* Supports layer sensitivity analysis to identify which parts of a neural network can be quantized safely
+* Helps prepare models for efficient deployment on hardware-accelerated and resource-constrained platforms
+
+**AIMET Documentation**: https://quic.github.io/aimet-pages/releases/latest/overview/index.html
+
+
+Model Onboarding
+======================================
+
+Model Onboarding Workflow
+-----------------------------
+
+Taking a neural network from a standard framework (like PyTorch or TensorFlow or ONNX) to highly optimized execution on Snapdragon silicon requires a structured, multi-step pipeline. This workflow ensures that hardware constraints are met, accuracy is preserved, and maximum performance is extracted.
+
+.. image:: /_static/Model_OnBoarding.jpg
+   :width: 800px
+   :align: center
+
+
+Step 1: Architecture Feasibility & Model Selection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Before any conversion begins, developers must verify that the model's architecture is compatible with the target hardware (especially the Hexagon Tensor Processor, or HTP). This step identifies unsupported operators, excessive memory footprints (VTCM limits), and activation growth. Catching these issues early prevents wasted engineering effort later in the deployment cycle.
+
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Category              | Ecosystem | Tool / API                        | Description                                                                |
++=======================+===========+===================================+============================================================================+
+| Architecture          | QNN       | ``qnn-architecture-checker``      | Verifies architecture, layer mix, tensor shapes, and memory limits.        |
+| Feasibility &         +-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Validation            | AIMET     | ``aimet_torch.``                  | Provides topology analysis guidance directly in PyTorch before             |
+|                       |           | ``architecture_checker``          | deployment optimization begins.                                            |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | SNPE      | ``snpe-platform-validator``       | Checks platform readiness and validates models specifically for SNPE.      |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | GENIE     | ``genie-to-qnn-stress.py``        | Stress tests Genie and LLM/GenAI workflows for hardware constraints.       |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+
+Step 2: Model Conversion & Custom Op Enablement
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Standard framework models (PyTorch, TensorFlow, ONNX) must be translated into Qualcomm-compatible artifacts. If the model contains layers that are not natively supported, developers package them as Custom Operations (User Defined Operations (UDOs)) or Layer Replacement.
+
+
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Category              | Ecosystem | Tool / API                        | Description                                                                |
++=======================+===========+===================================+============================================================================+
+| Conversion            | QNN       | ``qnn-<fw>-converter``            | Translates ONNX and TensorFlow framework graphs into QNN artifacts.        |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | SNPE      | ``snpe-<fw>-to-dlc``              | Translates framework graphs into SNPE's unified DLC format.                |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Custom Ops            | QNN       | ``qnn-op-package-generator``      | Generates packages for unsupported layers, allowing custom ops in QNN.     |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | SNPE      | ``snpe-udo-package-generator``    | Generates User Defined Operation (UDO) packages for SNPE.                  |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Build Flow            | GENIE     | ``builder.build()``               | Executes build flow for Genie models, inheriting QNN package generation.   |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+
+**Corrected QIDK references for this step**
+
+- `QIDK UDO example <https://github.com/quic/qidk/tree/master/Model-Enablement/Model-Conversion-UDO-SELU>`_
+- `QIDK layer replacement example <https://github.com/quic/qidk/tree/master/Model-Enablement/Model-Conversion-Layer-Replacement>`_
+
+Step 3: Quantization, Accuracy Analysis and Recovery
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To maximize throughput and minimize power consumption on the HTP, models are typically quantized from high-precision floating-point (FP32) to low-precision integer formats (INT8/INT16). Because quantization can cause accuracy degradation, this step relies heavily on debugging and evaluation tools to localize the error. If standard Post-Training Quantization (PTQ) fails, developers utilize AIMET for Quantization-Aware Training (QAT) or apply mixed-precision strategies to keep sensitive layers in higher precision.
+
+
+Stage 1: Float Baseline Validation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Before applying any quantization, it is critical to ensure the model's accuracy is solid when running in its native training framework (e.g., TensorFlow or PyTorch float mode). Run the unquantized floating-point model via the CPU runtime to ensure the initial conversion to the Qualcomm format hasn't inherently broken the graph before any quantization is applied.
+
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Category              | Ecosystem | Tool / API                        | Description                                                                |
++=======================+===========+===================================+============================================================================+
+| Float Baseline        | SNPE      | ``snpe-net-run``                  | Runs the unquantized float DLC on the CPU runtime to validate the graph.   |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | QNN       | ``qnn-net-run``                   | Runs the unquantized model on the CPU backend for baseline validation.     |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+
+
+Stage 2: Post-Training Quantization (PTQ)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In this stage, a standard, automated Post-Training Quantization is applied. The model is run through a conversion tool along with a small subset of the training dataset (calibration data) to find base encoding values and convert the model from FP32 to an integer format (like INT8 or INT16).
+
++-----------------------+-----------+------------------------------------------------+----------------------------------------------------------------------------+
+| Category              | Ecosystem | Tool / API                                     | Description                                                                |
++=======================+===========+================================================+============================================================================+
+|         PTQ           | SNPE      | ``snpe-dlc-quantize --override_params``        | Applies standard Post-Training Quantization to convert the model to INT8.  |
+|                       +-----------+------------------------------------------------+----------------------------------------------------------------------------+
+|                       | QNN       | ``qnn-onnx-converter --quantization_overrides``| Applies standard Post-Training Quantization to convert the model to INT8.  |
+|                       +-----------+------------------------------------------------+----------------------------------------------------------------------------+
+|                       | QAIRT     | ``qairt-converter --quantization_overrides``   | Converts and quantizes models automatically for QNN/QAIRT workflows.       |
++-----------------------+-----------+------------------------------------------------+----------------------------------------------------------------------------+
+
+**AIMET Documentation:**
+- `Documentation Link <https://quic.github.io/aimet-pages/releases/latest/tutorials/index.html>`_
+
+
+Stage 3: Accuracy Evaluation & Error Isolation (Layer-by-Layer Debugging)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If the overall task accuracy or KPI is unacceptable after Stage 2, developer can compare the outputs of the Float model against the Quantized model layer-by-layer. Tools compute metrics like Cosine Similarity (CS), Mean Average Error (MAE), and Signal-to-Quantization-Noise Ratio (SQNR).
+
+* **CS < 0.9:** Typically indicates a calculation/math error requiring a layer-by-layer check.
+* **CS > 0.9 (but below golden reference):** Usually indicates precision loss that needs to be fine-tuned via encodings.
+
+**Example for CS in QIDK references for this step**
+
+- `QIDK mixed precision example <https://github.com/quic/qidk/tree/master/Model-Enablement/Model-Accuracy-Mixed-Precision>`_
+
+Debug flags are used to dump intermediate layer outputs and sequentially trace the graph to find the exact operator where the mathematical drift first occurs.
+
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Category              | Ecosystem | Tool / API                        | Description                                                                |
++=======================+===========+===================================+============================================================================+
+| Error Isolation       | QNN       | ``qnn-accuracy-debugger``         | Identifies layer-wise accuracy drift and isolates math/precision errors.   |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | SNPE      | ``snpe-accuracy-debugger``        | Identifies layer-wise accuracy drift in SNPE models.                       |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | QAIRT     | ``qairt-accuracy-debugger``       | Unified accuracy debugger for layer-by-layer QAIRT workflows.              |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+
+
+Stage 4: Automated Tuning & Sweeping
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This action involves using inspector tools to test different quantization algorithms. Evaluators sweep through a matrix of different quantization strategies and policies to automatically rank the best encoding options for the model based on a supplied dataset.
+
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Category              | Ecosystem | Tool / API                        | Description                                                                |
++=======================+===========+===================================+============================================================================+
+| Evaluator             | QAIRT     | ``qairt-accuracy-evaluator``      | Unified accuracy evaluator for QAIRT workflows.                            |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+
+
+Stage 5: Advanced Recovery (AIMET QAT & Mixed Precision)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If basic sweeping fails to recover the drop, the model requires advanced intervention using the AI Model Efficiency Toolkit (AIMET).
+
+* **Mixed Precision:** Identifying highly sensitive layers (like activation-heavy blocks) and leaving them in a higher precision format (e.g., INT16 or FP16) while keeping the rest of the graph in INT8.
+
+**Example for Mixed Precision in QIDK references for this step**
+- `QIDK mixed precision example <https://github.com/quic/qidk/tree/master/Model-Enablement/Model-Accuracy-Mixed-Precision>`_
+
+* **Quantization-Aware Training (QAT):** The model is mathematically retrained in FP32 alongside simulated quantization noise. The AIMET encoding net calculates robust parameters for weights, activations, and biases.
+
+**AIMET Documentation:**
+- `Documentation Link <https://quic.github.io/aimet-pages/releases/latest/tutorials/index.html>`_
+
+
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Category              | Ecosystem | Tool / API                        | Description                                                                |
++=======================+===========+===================================+============================================================================+
+| AIMET Analysis        | AIMET     | ``QuantAnalyzer API``             | Identifies precision-sensitive layers & quantifies accuracy degradation.   |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Mixed Precision / QAT | AIMET     | ``AutoQuant API``                 | Automates PTQ and applies mixed precision to recover model accuracy.       |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Parameter Override    | QNN/QAIRT | ``--quantization_overrides``      | Flag used to inject AIMET generated parameters into QNN/QAIRT tables.      |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Parameter Override    | SNPE      | ``--override_params``             | Flag used to inject AIMET generated parameters into SNPE DLC files.        |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+
+
+
+Step 4: Compilation and Context generation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To prevent the target application from having to perform expensive graph optimizations every time it starts up, the model is pre-compiled. This step generates target-specific libraries and serialized context binaries, locking in the hardware execution plan so the app can load and run the model almost instantly.
+
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Category              | Ecosystem | Tool / API                        | Description                                                                |
++=======================+===========+===================================+============================================================================+
+| Generation            | QNN       | ``qnn-model-lib-generator``       | Transforms converted graph into serialized, hardware-specific binaries.    |
+|                       |           | ``qnn-context-binary-generator``  |                                                                            |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | SNPE      | ``snpe-dlc-graph-prepare``        | Pre-compiles graph to reduce device startup and application load times.    |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+
+
+Step 5: Performance profiling and simulation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Before deploying to physical hardware, developers run the compiled models on host-based x86 simulators. This allows them to generate detailed execution profiles, trace operations, verify memory usage, and estimate latency or throughput expectations.
+
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Category              | Ecosystem | Tool / API                        | Description                                                                |
++=======================+===========+===================================+============================================================================+
+| Simulation            | QNN       | ``qnn-net-run``                   | Executes models on host/device for verification and output dumping.        |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | SNPE      | ``snpe-net-run``                  | Executes DLC models for verification, output dumping, and testing.         |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | GENIE     | ``genie-t2t-run`` /               | Simulates text-to-text or text-to-image workflows on x86 environments.     |
+|                       |           | ``genie-t2m-run``                 |                                                                            |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       |           | ``qnn-throughput-net-run``/       | Analyzes performance, profiles memory, and traces operation execution and  |
+| Profiler              | QNN       | ``qnn-profile-viewer``            | helps to visualizes profiling data                                         |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | SNPE      | ``snpe-dlc-viewer`` /             | Visualizes the network structure and execution diagnostics for SNPE.       |
+|                       |           | ``snpe-diagview``                 |                                                                            |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | QAIRT     | ``qairt-visualizer``              | Unified visualizer for reviewing graph structure and performance metrics.  |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+
+Step 6: Runtime integration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Before pre-compiled artifacts are integrated into the actual software application, we can validate the output using execution tool on device.
+
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Category              | Ecosystem | Tool / API                        | Description                                                                |
++=======================+===========+===================================+============================================================================+
+| Execution             | QNN       | ``qnn-net-run``                   | Executes integrated QNN components on device                               |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | SNPE      | ``snpe-net-run``                  | Executes integrated SNPE components on device                              |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | GENIE     | ``genie-t2t-run`` /               | Simulates text-to-text or text-to-image workflows on device                |
+|                       |           | ``genie-t2m-run``                 |                                                                            |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+
+
+Step 7: Validation and deployment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The compiled artifacts are embedded into the final C++ or Java application. Developers handle input/output buffer management and runtime library integration. Finally, the model is tested on physical silicon to validate end-to-end task accuracy, thermal stability, power consumption, and sustained concurrency under real-world conditions.
+
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+| Category              | Ecosystem | Tool / API                        | Description                                                                |
++=======================+===========+===================================+============================================================================+
+| Device APIs           | QNN       | ``QNN C++ APIs``                  | Low-level APIs for fine-grained hardware control on Snapdragon targets.    |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | SNPE      | ``SNPE C++/Java APIs``            | APIs for final device sign-off, integrating with Android/Linux apps.       |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | GENIE     | ``Genie C++ APIs``                | High-level APIs for executing GenAI pipelines on target silicon.           |
+|                       +-----------+-----------------------------------+----------------------------------------------------------------------------+
+|                       | QAIRT     | ``QAIRT Unified APIs``            | Unified interface simplifying integration across the hardware stack.       |
++-----------------------+-----------+-----------------------------------+----------------------------------------------------------------------------+
+
+
+
+Large Language Model (LLM) Onboarding
+------------------------------------------
+
+This guide outlines the stages and details required for onboarding a Large Language Model (LLM) into the AI Hub Models repository. You should follow this path if you want to:
+
+* Add a new Large Language Model.
+* Add device support for an existing LLM.
+* Add new performance data for an existing LLM.
+
+**LLM Onboarding Reference Documentation:** `Documentation <https://github.com/qualcomm/ai-hub-models/blob/main/tutorials/llm/onboarding.md>`_
+
+
+Solutions
+==========
+
+Generic Android Application Architecture
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The Android application is designed with a clear separation of architectural responsibilities:
+
+- Java/Kotlin → UI, Camera/Audio integration, Lifecycle management
+- JNI → Minimal bridging layer between managed and native code
+- C++ → Pre‑processing, Inference, and Post‑processing logic
+- QAIRT SDK → Execution and hardware acceleration on CPU, GPU, or DSP using SNPE/QNN/GENIE APIs
+
+.. image:: /_static/Android_App_Arechiecture.png
+   :width: 250px
+   :align: center
+
+Detailed Stage Breakdown
+------------------------
+
+1. Java Layer (Application Logic)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Responsibilities:
+
+- Camera capture (Android Camera2 API / CameraX)
+- Frame acquisition (Bitmap / YUV)
+- UI rendering (bounding boxes, labels)
+- Threading & lifecycle
+
+Typical data passed to JNI:
+
+- Image buffer - Frame width / height, format
+- User Prompt
+- Hardware acceleration (CPU / GPU / DSP)
+
+Receiving data from Native Layer:
+
+- Post process detection outputs (bounding boxes, class labels, and confidence scores) and map results to screen coordinates
+- Text/Image/Audio from GenAI
+
+2. JNI Layer (Bridge Only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Responsibilities:
+
+- Minimal logic
+- Data marshaling only
+- No preprocessing or math
+
+JNI exists to:
+
+- Avoid SDK dependency in Java
+- Keep performance-critical logic native
+
+3. C++ Processing
+~~~~~~~~~~~~~~~~~~~~
+
+Preprocessing:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Responsibilities:
+
+- Resize to model input size
+- Color conversion (YUV → RGB)
+- Normalization / scaling
+- Tensor layout conversion
+
+This stage ensures:
+
+- Input matches model expectations exactly
+
+Inference:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Responsibilities:
+
+- Load model once at startup
+- Select runtime (CPU / GPU / DSP)
+- Allocate buffers
+- Execute inference per frame
+
+This stage uses:
+
+- SNPE APIs
+- QNN APIs
+- Genie APIs
+
+Postprocessing:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Responsibilities:
+
+- Decode raw output tensors
+- Apply confidence thresholds
+- Perform NMS (if needed)
+- Convert model output → objects
+
+Produces:
+
+- Bounding boxes, Class IDs, Confidence scores for Object Detection Models
+- Text for NLP
+
+
+Why This Architecture Works Well
+--------------------------------
+
+- **Performance**: Heavy work stays native
+- **Portability**: Swap models without UI changes
+- **Scalability**: Same flow for detection, segmentation, pose
+
+
+QIDK Solutions
+""""""""""""""""""""""""""""""
+
+This document describes all end-to-end AI solutions provided in the
+Qualcomm Innovators Development Kit (QIDK). Solutions are grouped based
+on the AI stack used: SNPE, QNN, and GenAI (GENIE).
+
+
+SNPE Solutions
+----------------
+
+NLPSolution1 – Question Answering
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Description**
+  End-to-end Question Answering pipeline demonstrating on-device NLP
+  inference using Qualcomm AI accelerators.
+
+**Model Used**
+  * ELECTRA – Question Answering
+
+**Model On-boarding**
+  * `ELECTRA Model On-boarding <https://github.com/quic/qidk/tree/master/Solutions/NLPSolution1-QuestionAnswering>`_
+
+**Android App Source Code**
+  * https://github.com/quic/qidk/tree/master/Solutions/NLPSolution1-QuestionAnswering/QuestionAnswering
+
+NLPSolution2 – Sentiment Analysis
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Description**
+  Sentiment analysis example showcasing NLP inference optimized for
+  Snapdragon platforms.
+
+**Model Used**
+  * MobileBERT – Sentiment Classification
+
+**Model On-boarding**
+  * `MobileBERT Model On-boarding <https://github.com/quic/qidk/tree/master/Solutions/NLPSolution2-SentimentAnalysis>`_
+
+**Android App Source Code**
+  * https://github.com/quic/qidk/tree/master/Solutions/NLPSolution2-SentimentAnalysis/SentimentAnalysis
+
+
+NLPSolution3 – Automatic Speech Recognition (Whisper)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Description**
+  Automatic Speech Recognition pipeline running fully on-device using
+  Whisper and Qualcomm AI accelerators.
+
+**Model Used**
+  * Whisper – Automatic Speech Recognition
+
+**Model On-boarding**
+  * `ASR Whisper Model On-boarding <https://github.com/quic/qidk/blob/master/Solutions/NLPSolution3-AutomaticSpeechRecognition-Whisper/Generate_Assets/whisper_notebook.ipynb>`_ 
+
+**Android App Source Code**
+  * https://github.com/quic/qidk/tree/master/Solutions/NLPSolution3-AutomaticSpeechRecognition-Whisper/Android_App_Whisper
+
+VisionSolution1 – Object Detection (YOLO NAS)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Description**
+  High-performance object detection using YOLO NAS optimized for
+  mobile AI acceleration.
+
+**Model Used**
+  * YOLO NAS
+
+**Model On-boarding**
+  * `YOLONAS Model On-boarding <https://github.com/quic/qidk/blob/master/Solutions/VisionSolution1-ObjectDetection-YoloNas/GenerateDLC.ipynb>`_ 
+
+**Android App Source Code**
+  * https://github.com/quic/qidk/tree/master/Solutions/VisionSolution1-ObjectDetection-YoloNas/app
+
+
+VisionSolution1 – Object Detection (DETR)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Description**
+  Transformer-based object detection using DETR on Snapdragon platforms.
+
+**Model Used**
+  * DETR – Detection Transformer
+
+**Model On-boarding**
+  * `DETR Model On-boarding <https://github.com/quic/qidk/blob/master/Solutions/VisionSolution1-ObjectDetection-DETR/GenerateDLC.ipynb>`_ 
+
+**Android App Source Code**
+  * https://github.com/quic/qidk/tree/master/Solutions/VisionSolution1-ObjectDetection-DETR/app
+
+
+VisionSolution2 – Image Super Resolution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Description**
+  Image super-resolution pipeline optimized for on-device inference.
+
+**Model Used**
+  * SESR – Single Image Efficient Super Resolution
+
+**Model On-boarding**
+  * `SESR Model On-boarding Notebook <https://github.com/quic/qidk/blob/master/Solutions/VisionSolution2-ImageSuperResolution/Genarate_Model/sesr.ipynb>`_
+    
+
+**Android App Source Code**
+  * https://github.com/quic/qidk/tree/master/Solutions/VisionSolution2-ImageSuperResolution/superresolution
+
+VisionSolution3 – Image Enhancement
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Description**
+  Image enhancement solution focusing on low-light and visual quality
+  improvement.
+
+**Model Used**
+  * EnlightenGAN – Image Enhancement
+
+**Model On-boarding**
+  * `EnlightenGAN Model On-boarding <https://github.com/quic/qidk/tree/master/Solutions/VisionSolution3-ImageEnhancement>`_
+
+**Android App Source Code**
+  * https://github.com/quic/qidk/tree/master/Solutions/VisionSolution3-ImageEnhancement/enhancement
+
+VisionSolution4 – Pose Estimation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Description**
+  Human pose estimation pipeline optimized for Snapdragon devices.
+
+**Model Used**
+  * HRNet – Human Pose Estimation
+
+**Model On-boarding**
+  * `HRNet Model On-boarding Notebook <https://github.com/quic/qidk/blob/master/Solutions/VisionSolution4-PoseEstimation/Generate_models/GenerateDLC.ipynb>`_
+
+**Android App Source Code**
+  * https://github.com/quic/qidk/tree/master/Solutions/VisionSolution4-PoseEstimation
+
+QNN Solutions
+----------------
+
+VisionSolution1 – Object Detection (QNN based YOLO NAS)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Description**
+  YOLONAS object detection implemented using Qualcomm AI Engine Direct (QNN).
+
+**Model Used**
+  * YOLONAS
+
+**Model On-boarding**
+  * `YOLONAS Model On-boarding Notebook <https://github.com/quic/qidk/blob/master/Solutions/QNN/VisionSolution1-ObjectDetection-YoloNas/GenerateQNNSharedLibrary.ipynb>`_
+
+**Android App Source Code**
+  * https://github.com/quic/qidk/tree/master/Solutions/QNN/VisionSolution1-ObjectDetection-YoloNas/app
+
+
+
+GenAI Solutions
+-----------------
+
+AI Assistant
+~~~~~~~~~~~~
+
+**Description**
+  AI Assistant is an on-device GenAI chat application that acts as an AI
+  companion, enabling natural language interaction and task assistance.
+  The solution demonstrates how to integrate and accelerate Large Language
+  Models (LLMs) on Snapdragon platforms using GENIE and QAIRT APIs.
+
+**Model Used**
+  * LLaMA family of Large Language Models (LLMs)
+
+**Model On-boarding**
+  * LLM models are sourced from Qualcomm AI Hub and Hugging Face
+  * Context binaries are generated using GENIE export flows as described in: `LLaMA Model On-boarding from AI Hub <https://github.com/quic/ai-hub-apps/tree/main/tutorials/llm_on_genie>`_
+  
+
+**Android App Source Code**
+  * https://github.com/quic/qidk/tree/master/Solutions/GenAI/AI-Assistant/app
+
+
+Speech to Image
+~~~~~~~~~~~~~~~
+
+**Description**
+  Speech to Image is a multimodal GenAI application that converts spoken
+  input into image outputs fully on-device. The solution demonstrates
+  speech understanding followed by generative image synthesis using
+  Qualcomm GenAI acceleration.
+
+**Model Used**
+  * Automatic Speech Recognition model (Speech Encoder)
+  * Text to Image Generative Model (Diffusion based)
+
+**Model On-boarding**
+  * ASR and generative models are downloaded from Qualcomm AI Hub and QPM tutorials 
+  * `ASR (Whisper Tiny) and Stable Diffusion Model (QPM tutorials) On-boarding <https://github.com/quic/qidk/tree/master/Solutions/GenAI/speech_to_image>`_
+
+**Android App Source Code**
+  * https://github.com/quic/qidk/tree/master/Solutions/GenAI/speech_to_image/speech_to_image
+
+
+ASR-LLM-TTS
+~~~~~~~~~~~~
+
+**Description**
+  End-to-end voice AI pipeline that chains Automatic Speech Recognition,
+  a Large Language Model, and Text-to-Speech synthesis entirely on-device.
+  The user speaks a query; the app transcribes it with Whisper (ASR),
+  generates a response with LLaMA (LLM), and speaks the answer back with
+  MeloTTS (TTS) — all accelerated on the Snapdragon NPU via QAIRT GENIE APIs.
+
+**Device Compatibility**
+
+  .. list-table::
+     :header-rows: 1
+     :widths: 40 20 40
+
+     * - Device
+       - QAIRT Version
+       - OS
+     * - Snapdragon 8 Elite (V79)
+       - 2.45.0
+       - Android 15
+     * - Snapdragon 8 Elite Gen 5 (V81)
+       - 2.45.0
+       - Android 16
+
+**Models Used**
+
+  * Whisper – Automatic Speech Recognition (ASR)
+  * LLaMA 3.2-3B-Instruct – Large Language Model (LLM)
+  * MeloTTS – Text-to-Speech (TTS)
+
+**Model On-boarding**
+
+  * **ASR (Whisper):** Generate via `VoiceAI ASR Notebook <https://qpm.qualcomm.com/#/main/tools/details/VoiceAI_ASR>`_
+    or download from `Qualcomm AI Hub (Whisper) <https://aihub.qualcomm.com/models/whisper_small>`_
+  * **LLM (LLaMA):** Download optimized LLaMA 3.2-3B model from
+    `AI Hub LLM on Genie tutorial <https://github.com/quic/ai-hub-apps/tree/main/tutorials/llm_on_genie>`_
+    or generate via `QPM Notebook (LLaMA 3.2-3B IoT) <https://qpm.qualcomm.com/#/main/tools/details/Tutorial_for_Llama3p2_3B_Instruct_IoT>`_
+  * **TTS (MeloTTS):** Generate via `VoiceAI TTS Notebook <https://qpm.qualcomm.com/#/main/tools/details/VoiceAI_TTS>`_
+
+**Android App Source Code**
+  * https://github.com/quic/qidk/tree/master/GenAI-Solutions/ASR-LLM-TTS
+
+
+VLM – Vision-Language Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Description**
+  On-device Vision-Language Model (VLM) application that accepts an image
+  and a text question and streams a natural-language answer token-by-token.
+  The solution demonstrates a three-node Genie pipeline — image encoder,
+  text (LUT) encoder, and LLM decoder — running fully on the Hexagon DSP
+  via Qualcomm GENIE and QNN HTP APIs. Supports both image+text and
+  text-only conversation modes.
+
+**Device Compatibility**
+
+  .. list-table::
+     :header-rows: 1
+     :widths: 40 20 40
+
+     * - Device
+       - QAIRT Version
+       - OS
+     * - Snapdragon 8 Elite Gen 5 (V81)
+       - 2.45.0
+       - Android 16
+
+**Model Used**
+
+  * Qwen3-VL-4B-Instruct – Vision-Language Model (w4a16 quantized, QNN HTP)
+
+**Model On-boarding**
+
+  * Download the pre-compiled model bundle (``geniex_qairt-w4a16`` variant) from
+    `Qualcomm AI Hub – Qwen3-VL <https://aihub.qualcomm.com/mobile/models/qwen3_vl_4b_instruct>`_
+    (Quick Start → OS: Android → Target: Snapdragon 8 Elite Gen 5)
+  * The required QAIRT SDK version is embedded in ``metadata.json``
+    (``tool_versions.qairt``) inside the downloaded bundle
+
+**Android App Source Code**
+  * https://github.com/quic/qidk/tree/master/GenAI-Solutions/VLM
+
+.. _litert-llm:
+
+Deploying LLMs on Qualcomm NPU using LiteRT LM
+================================================
+
+.. contents:: On this page
+   :depth: 2
+   :local:
+
+----
+
+Overview
+--------
+
+`LiteRT LM <https://github.com/google-ai-edge/litert-samples/tree/main/compiled_model_api/qualcomm/llm_chatbot_npu>`_
+is Google's on-device inference library for large language models. On Qualcomm Snapdragon
+devices, it leverages the Hexagon NPU to execute models locally without any cloud connectivity.
+
+This article walks through deploying the LiteRT LM sample Android application on a Snapdragon
+device, covering both the command-line and Android Studio deployment paths.
+
+----
+
+The ``.litertlm`` Model Format
+--------------------------------
+
+The ``.litertlm`` format is a model binary pre-compiled for a specific Qualcomm chipset by
+Qualcomm AI Hub. Unlike general-purpose formats such as ONNX or GGUF, a ``.litertlm`` file
+is ready for direct NPU execution — no runtime compilation is required.
+
+.. important::
+   Each ``.litertlm`` file targets a single chipset. Download the file that matches your
+   device's SoC identifier (e.g. ``sm8750`` for Snapdragon 8 Elite). Loading an incompatible
+   file will result in a runtime error.
+
+----
+
+Supported Models
+-----------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 25 40
+
+   * - Model
+     - Chipset Target
+     - Capabilities
+   * - Gemma 4 E2B-it
+     - SM8750 (Snapdragon 8 Elite), SM8850 (Snapdragon 8 Elite Gen5)
+     - Text chat, voice input
+   * - FastVLM-0.5B
+     - SM8750 (Snapdragon 8 Elite)
+     - Text chat, image understanding
+
+----
+
+Prerequisites
+-------------
+
+.. list-table::
+   :widths: 30 70
+
+   * - **Device**
+     - A device with Snapdragon 8 Elite (SM8750) or Snapdragon 8 Elite Gen5 (SM8850)
+   * - **USB Debugging**
+     - Enabled under Developer Options on the target device
+   * - **Android Studio**
+     - Panda 4 (2025.3.4) or newer — `download <https://developer.android.com/studio>`_
+   * - **ADB**
+     - Included with Android Studio's platform tools
+   * - **Git**
+     - To clone the sample repository
+
+----
+
+Step 1 — Clone the Sample Repository
+--------------------------------------
+
+.. code-block:: bash
+
+   git clone https://github.com/google-ai-edge/litert-samples.git
+
+Navigate to the NPU chatbot project:
+
+.. code-block:: bash
+
+   cd litert-samples/compiled_model_api/qualcomm/llm_chatbot_npu
+
+This directory is a self-contained Android Studio project requiring no source modifications.
+
+----
+
+Step 2 — Download the Model
+-----------------------------
+
+Download the ``.litertlm`` file for your device from the corresponding Hugging Face repository.
+Ensure the filename matches your device's SoC identifier — for example:
+
+.. code-block:: text
+
+   gemma-4-E2B-it_qualcomm_sm8750.litertlm   # Snapdragon 8 Elite
+   FastVLM-0.5B.qualcomm.sm8750.litertlm      # Snapdragon 8 Elite
+
+.. note::
+   Model files range from 1 GB to 4 GB. Ensure sufficient storage is available on both the
+   host machine and the target device before proceeding.
+
+----
+
+Step 3 — Build and Deploy the Application
+------------------------------------------
+
+1. Open Android Studio and select **File → Open**.
+2. Navigate to ``litert-samples/compiled_model_api/qualcomm/llm_chatbot_npu`` and click **OK**.
+3. Wait for the Gradle sync to complete. Resolve any SDK licence prompts if shown.
+4. Connect the target device via USB. Confirm it appears in the device selector toolbar.
+5. Select **Run → Run 'app'** (or press **Shift+F10**).
+   Android Studio will build the APK and deploy it directly to the connected device.
+
+----
+
+Step 4 — Push the Model to the Device
+---------------------------------------
+
+Copy the downloaded ``.litertlm`` file into the application's data directory using ADB:
+
+.. code-block:: bash
+
+   adb push gemma-4-E2B-it_qualcomm_sm8750.litertlm \
+     /sdcard/Android/data/com.example.qnn_litertlm_gemma/files/model.litertlm
+
+The application scans this directory at startup and loads any ``.litertlm`` file it finds.
+No additional configuration is required.
+
+----
+
+Step 5 — Launch and Verify
+----------------------------
+
+Open the application on the device. On first launch, the model is loaded onto the Hexagon NPU,
+after which the chat interface becomes available. Submit a text prompt to confirm the model
+is responding correctly.
+
+----
+
+Application Capabilities
+--------------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 50 25
+
+   * - Mode
+     - Description
+     - Supported Models
+   * - **Text Chat**
+     - Conversational text input and streamed response output
+     - Gemma 4, FastVLM
+   * - **Image + Text**
+     - Image selected from device gallery with an accompanying text query
+     - FastVLM-0.5B
+   * - **Voice Input**
+     - Microphone-based prompt entry
+     - Gemma 4 (2B variant only)
+
+----
+
+----
+
+References
+----------
+
+- `LiteRT LM NPU Sample — GitHub <https://github.com/google-ai-edge/litert-samples/tree/main/compiled_model_api/qualcomm/llm_chatbot_npu>`_
+- :doc:`../release-notes/solutions`
+- :doc:`../release-notes/setup_installation`
+
+
+.. _geniex-android:
+
+On-Device LLM Inference on Android using GenieX
+=================================================
+
+.. contents:: On this page
+   :depth: 2
+   :local:
+
+----
+
+What is GenieX
+---------------
+
+GenieX is an on-device generative AI inference runtime built for Qualcomm Snapdragon platforms.
+It is the community edition of Qualcomm's GENIE platform, designed to run frontier language models
+and vision-language models locally on-device — without any cloud dependency.
+
+GenieX exposes five integration interfaces over a common inference foundation:
+
+- **Android SDK** — Kotlin/Java library distributed via Maven Central
+- **Python SDK** — Embeddable inference in Python applications
+- **CLI** — Terminal-based model execution
+- **Docker** — Containerised deployment for edge Linux targets
+- **OpenAI-compatible server** — Local HTTP server with OpenAI-style API
+
+This article covers the **Android SDK** path.
+
+.. note::
+   GenieX is currently in **developer preview**. Interfaces are subject to change in future
+   releases. Community feedback can be submitted via the project's GitHub Issues or Slack channel.
+
+----
+
+Architecture
+------------
+
+GenieX is structured as a layered system. At the top, developer-facing interfaces (Android SDK,
+Python, CLI, Docker, OpenAI server) receive inference requests and route them through a unified
+runtime layer. That runtime layer selects between two underlying execution backends based on the
+model type and configured compute unit.
+
+.. image:: https://mintcdn.com/qualcomm-0801e48b/ewrmU9zMnfZyH0O6/Mintlify-image/geniex_arch_v2.png
+   :align: center
+   :alt: GenieX Architecture Diagram
+
+The two backends — ``llama_cpp`` and ``qairt`` — each map to a distinct model ecosystem and set
+of supported compute units, as described in the following sections.
+
+----
+
+Why Two Runtimes
+-----------------
+
+A single inference runtime cannot simultaneously serve the breadth of the open-source model
+ecosystem and the depth of hardware-specific NPU optimisation. GenieX addresses this with a
+dual-runtime architecture:
+
+**llama.cpp runtime**
+   Executes community GGUF models using GGML kernels. It supports execution on the Hexagon NPU,
+   Adreno GPU, and CPU, enabling broad compatibility with models published on Hugging Face and
+   other community repositories. This runtime provides flexibility across compute units and model
+   sources.
+
+**Qualcomm AI Engine Direct (qairt)**
+   Executes pre-compiled model bundles sourced from Qualcomm AI Hub. These bundles are
+   chipset-specific compilations that run exclusively on the Hexagon NPU. The quantization
+   strategy, context length, and KV cache layout are fixed at compile time, enabling predictable
+   and hardware-optimised inference.
+
+Together, the two runtimes provide both **broad model coverage** (llama.cpp) and **hardware-specific
+NPU execution** (qairt), without requiring the developer to operate two separate SDKs.
+
+----
+
+Runtime Selection Guide
+------------------------
+
+The appropriate runtime depends on the model source, the required compute flexibility, and the
+target hardware.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 35 35
+
+   * - Criterion
+     - llama.cpp
+     - Qualcomm AI Engine Direct
+   * - **Model format**
+     - GGUF (any community model)
+     - Qualcomm AI Hub pre-compiled bundles
+   * - **Compute units**
+     - NPU / GPU / CPU
+     - NPU only
+   * - **Precisions (Quantizations) picked by**
+     - You (Q4_0, Q8_0, F16, …)
+     - Pre-quantized in the bundle
+   * - **NPU quantization for llama.cpp**
+     - Q4_0 provides the broadest Hexagon NPU kernel coverage
+     - Not applicable
+   * - **Context length / KV cache**
+     - Configurable via ``ModelConfig.nCtx``
+     - Pre-determined in the bundle; do not override
+   * - **VLM support**
+     - Requires ``mmproj-*.gguf`` projection file in the same directory
+     - Supported where available on AI Hub
+   * - **Best for**
+     - Bringing your own GGUF from Hugging Face
+     - Highest NPU performance on Qualcomm® AI Hub Models
+
+When ``runtime_id`` is not specified, GenieX automatically selects the backend based on the
+downloaded model's metadata.
+
+----
+
+Supported Models on Android
+-----------------------------
+
+GenieX on Android supports both LLM (text-only) and VLM (vision + text) model types across
+both runtimes.
+
+**llama_cpp — Quantization Support**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 20 60
+
+   * - Quantization
+     - Compute
+     - Notes
+   * - ``Q4_0``
+     - NPU, GPU, CPU
+     - Broadest Hexagon NPU kernel coverage in llama.cpp; recommended for NPU execution
+   * - ``Q8_0``
+     - GPU, CPU
+     - Higher accuracy than Q4_0; no NPU support
+   * - ``F16``
+     - GPU, CPU
+     - Full precision; no NPU support
+   * - ``Q4_K_M``, ``Q5_K_M``
+     - GPU, CPU
+     - Mixed-precision K-quants; no NPU support
+
+**qairt — Quantization Support**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 20 60
+
+   * - Quantization
+     - Compute
+     - Notes
+   * - ``w4a16``
+     - NPU
+     - Weights int4, activations int16; most common AI Hub bundle type
+   * - ``w4``
+     - NPU
+     - Weights int4, activations float; marginally higher accuracy than w4a16
+
+----
+
+Deploying with GenieX Chat Android
+-------------------------------------
+
+`GenieX Chat Android <https://github.com/qualcomm/ai-hub-apps/tree/release/geniex_chat_android>`_
+is a validated reference application from Qualcomm that demonstrates on-device LLM and VLM
+inference using the GenieX SDK. Model weights are **not** bundled into the APK. Instead, the
+application provides an in-app model catalog from which models are downloaded directly to the
+device and loaded onto the NPU — no manual file transfer or ADB push is required.
+
+Prerequisites
+~~~~~~~~~~~~~~
+
+- Android Studio 2024.3.1 or newer
+- A Snapdragon 8 Elite (SM8750) or Snapdragon 8 Elite Gen 5 (SM8850) device
+- USB debugging enabled on the target device
+
+Step 1 — Build the APK
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Open the ``geniex_chat_android`` folder in Android Studio.
+2. Select **File → Sync Project with Gradle Files** and wait for the sync to complete.
+   The GenieX SDK dependency (``com.qualcomm.qti:geniex-android``) resolves automatically
+   from Maven Central — no additional SDK setup is required.
+3. Navigate to **Build → Build Bundle(s) / APK(s) → Build APK(s)**.
+4. The signed debug APK is output to:
+
+   .. code-block:: text
+
+      build/outputs/apk/debug/app-debug.apk
+
+Step 2 — Install on Device
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+With the device connected via USB:
+
+.. code-block:: bash
+
+   adb install -t build/outputs/apk/debug/app-debug.apk
+
+Step 3 — Select, Download, and Run a Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Launch the application from the device launcher. The in-app catalog lists all supported models.
+Select a model to initiate the download directly to the device — no manual file transfer is
+required. Once the download completes, tap the model entry in the UI to load it, then enter a
+prompt in the chat interface and submit it to run inference on the Hexagon NPU.
+
+.. note::
+   Model files range from under 1 GB to several gigabytes. Ensure sufficient free storage
+   is available on the device before initiating a download.
+
+Supported Models in GenieX Chat Android
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following models are available directly from the in-app catalog. All models run on the
+Hexagon NPU. LLM models support text input; VLM models additionally accept image input.
+
+**LLM Models**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 50 25 25
+
+   * - Model
+     - Runtime
+     - Compute
+   * - Qwen3-0.6B
+     - llama_cpp
+     - NPU
+   * - Qwen3-1.7B
+     - llama_cpp
+     - NPU
+   * - Ministral-3B-Instruct
+     - llama_cpp
+     - NPU
+   * - Granite-4.0-Micro
+     - llama_cpp
+     - NPU
+   * - Phi-4-Mini-Instruct
+     - llama_cpp
+     - NPU
+   * - Gemma 4 2B Instruct (QAT Q4_0)
+     - llama_cpp
+     - NPU
+   * - Gemma 4 4B Instruct (QAT Q4_0)
+     - llama_cpp
+     - NPU
+   * - Qwen3.5-0.8B
+     - llama_cpp
+     - NPU
+   * - Qwen3.5-2B
+     - llama_cpp
+     - NPU
+   * - GPT-OSS-20B
+     - llama_cpp
+     - NPU
+   * - Qwen3-4B
+     - qairt
+     - NPU
+   * - Qwen3-4B-Instruct
+     - qairt
+     - NPU
+
+**VLM Models** (Vision + Text)
+
+.. list-table::
+   :header-rows: 1
+   :widths: 50 25 25
+
+   * - Model
+     - Runtime
+     - Compute
+   * - Qwen3-VL-2B-Instruct
+     - llama_cpp
+     - NPU
+   * - Qwen3-VL-4B-Instruct
+     - llama_cpp
+     - NPU
+   * - Qwen2.5-VL-7B-Instruct
+     - qairt
+     - NPU
+
+----
+
+References
+----------
+
+- `GenieX — What is GenieX? <https://geniex.aihub.qualcomm.com/en/get-started/what-is-geniex>`_
+- `GenieX — Platforms <https://geniex.aihub.qualcomm.com/en/get-started/platforms>`_
+- `GenieX — Supported Models (Android) <https://geniex.aihub.qualcomm.com/en/models/supported#android-2>`_
+- `GenieX Chat Android — GitHub <https://github.com/qualcomm/ai-hub-apps/tree/release/geniex_chat_android>`_
+- `GenieX API Reference - <https://geniex.aihub.qualcomm.com/en/run/android/api-reference>`_
+- `GenieX Android Quickstart <https://geniex.aihub.qualcomm.com/en/run/android/quickstart>`_
+- :doc:`../release-notes/solutions`
+- :doc:`../release-notes/setup_installation`
+
+Power Profiling Information
+=========================================
+
+Snapdragon Profiler Power Profiling Information
+------------------------------------------------
+This provides comprehensive instructions for collecting system power profiling information for CPU/GPU/NPU using the Snapdragon Profiler.
+
+**Requirements:**
+
+- Snapdragon Profiler Version: 2025.7 or later (available via Qualcomm Package Manager)
+- Device: Snapdragon 8 Elite Gen 5 (must be rooted and SELinux disabled)
+
+
+Step 1: Launch Snapdragon Profiler and Connect to Device
+
+.. image:: /_static/tools/step1.jpg
+   :width: 800px
+
+Step 2: Select “Realtime Performance Analysis”
+
+.. image:: /_static/tools/step2.jpg
+   :width: 800px
+
+
+Step 3: Enable Power Profiling Information
+Double-click to select the Power Profiling Information.
+
+.. image:: /_static/tools/step3.jpg
+   :width: 800px
+
+
+Frequently Asked Questions
+==========================
+
+Device & Platform
+-----------------
+
+.. dropdown:: My device is not booting. What should I do?
+
+   First, check if the **Display Card** is properly seated — a loose or incorrectly connected Display Card is a common cause of boot issues. Reseat the card and attempt to power on the device again.
+
+   If the issue persists, contact the Qualcomm QIDK team at `qidk@qti.qualcomm.com <mailto:qidk@qti.qualcomm.com>`_ with the following details:
+
+   - Device model and Snapdragon platform
+   - Description of the issue (e.g., stuck on boot logo, no display, not powering on)
+
+   The team will assist you with next steps.
+
+.. dropdown:: ADB is not detecting my device. What should I check?
+
+   - Ensure USB debugging is enabled on the device (**Settings → Developer Options → USB Debugging**)
+   - Try a different USB cable or port
+   - Run ``adb kill-server && adb start-server`` to reset the ADB daemon
+   - Confirm the device appears with ``adb devices``
+
+Build & Gradle
+--------------
+
+.. dropdown:: I am getting Gradle build errors. What Android Studio version should I use?
+
+   Gradle and build tool compatibility is tightly coupled to the Android Studio version. Refer to the ``README`` file in the solution directory for the recommended Android Studio version for that specific solution.
+
+   Using a newer or older version than specified may result in Gradle sync failures or dependency resolution errors. If issues persist after switching to the correct version:
+
+   - Invalidate caches: **File → Invalidate Caches / Restart**
+   - Delete the ``.gradle`` and ``build`` directories and re-sync the project
+   - Ensure ``QAIRT_SDK_ROOT`` is set correctly and ``resolveDependencies.sh`` has been run

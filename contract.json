@@ -1,0 +1,23 @@
+{
+  "session_id": "session-init-001",
+  "status": "collecting",
+  "missing_mandatory_fields": [
+    "incident_type",
+    "incident_location",
+    "date_time",
+    "immediate_actions_taken"
+  ],
+  "next_clarification_prompt": "Please describe what happened, where, and when.",
+  "fields": {
+    "incident_type": null,
+    "severity_level": null,
+    "incident_location": null,
+    "date_time": null,
+    "persons_involved": null,
+    "equipment_asset_involved": null,
+    "incident_description": null,
+    "immediate_actions_taken": null,
+    "witness_information": null,
+    "recommended_follow_up_action": null
+  }
+}
