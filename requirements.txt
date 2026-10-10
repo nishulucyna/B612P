@@ -1,0 +1,13 @@
+# Orchestrator / brain (host PC)
+fastapi>=0.110
+uvicorn>=0.29
+pydantic>=2.0
+python-multipart>=0.0.9
+
+# Tests
+pytest>=7.4
+httpx>=0.27
+
+# Optional: offline CPU Whisper for the mock STT fallback (needs a LOCAL model dir,
+# set MOCK_WHISPER_MODEL_DIR). Not required for text-driven demos/tests.
+# faster-whisper
