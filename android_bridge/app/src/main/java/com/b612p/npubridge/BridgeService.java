@@ -42,12 +42,10 @@ public class BridgeService extends Service {
             case STATE_ALERT:
                 StringBuilder sb = new StringBuilder("PROBLEM - not fully on the NPU:");
                 if (s.warning() != null) {
-                    sb.append("
-STT: ").append(s.warning());
+                    sb.append("\nSTT: ").append(s.warning());
                 }
                 if (l.warning() != null) {
-                    sb.append("
-LLM: ").append(l.warning());
+                    sb.append("\nLLM: ").append(l.warning());
                 }
                 return sb.toString();
             case STATE_OK:

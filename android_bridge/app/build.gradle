@@ -5,7 +5,8 @@ plugins {
 
 android {
     namespace 'com.b612p.npubridge'
-    compileSdk 34
+    compileSdk 35
+    ndkVersion '26.2.11394342'
 
     defaultConfig {
         applicationId 'com.b612p.npubridge'
@@ -29,6 +30,7 @@ android {
     externalNativeBuild {
         cmake {
             path file('src/main/cpp/CMakeLists.txt')
+            version '3.22.1'
         }
     }
 

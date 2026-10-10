@@ -1,0 +1,17 @@
+[
+{
+  "directory": "D:/B612P/android_bridge/app/.cxx/Debug/674k2s36/arm64-v8a",
+  "command": "C:\\Users\\ramac\\AppData\\Local\\Android\\Sdk\\ndk\\26.2.11394342\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android29 --sysroot=C:/Users/ramac/AppData/Local/Android/Sdk/ndk/26.2.11394342/toolchains/llvm/prebuilt/windows-x86_64/sysroot -DASR_EXPORTS -ID:/B612P/android_bridge/app/src/main/cpp/inc -ID:/B612P/android_bridge/app/src/main/cpp/inc/zdl -ID:/B612P/android_bridge/app/src/main/cpp/inc/hpp -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -std=c++11 -frtti -fexceptions -std=c++11 -frtti -fexceptions -fno-limit-debug-info  -fPIC -o CMakeFiles\\ASR.dir\\native-lib_pre_post.cpp.o -c D:\\B612P\\android_bridge\\app\\src\\main\\cpp\\native-lib_pre_post.cpp",
+  "file": "D:\\B612P\\android_bridge\\app\\src\\main\\cpp\\native-lib_pre_post.cpp"
+},
+{
+  "directory": "D:/B612P/android_bridge/app/.cxx/Debug/674k2s36/arm64-v8a",
+  "command": "C:\\Users\\ramac\\AppData\\Local\\Android\\Sdk\\ndk\\26.2.11394342\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android29 --sysroot=C:/Users/ramac/AppData/Local/Android/Sdk/ndk/26.2.11394342/toolchains/llvm/prebuilt/windows-x86_64/sysroot -DASR_EXPORTS -ID:/B612P/android_bridge/app/src/main/cpp/inc -ID:/B612P/android_bridge/app/src/main/cpp/inc/zdl -ID:/B612P/android_bridge/app/src/main/cpp/inc/hpp -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -std=c++11 -frtti -fexceptions -std=c++11 -frtti -fexceptions -fno-limit-debug-info  -fPIC -o CMakeFiles\\ASR.dir\\inference.cpp.o -c D:\\B612P\\android_bridge\\app\\src\\main\\cpp\\inference.cpp",
+  "file": "D:\\B612P\\android_bridge\\app\\src\\main\\cpp\\inference.cpp"
+},
+{
+  "directory": "D:/B612P/android_bridge/app/.cxx/Debug/674k2s36/arm64-v8a",
+  "command": "C:\\Users\\ramac\\AppData\\Local\\Android\\Sdk\\ndk\\26.2.11394342\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android29 --sysroot=C:/Users/ramac/AppData/Local/Android/Sdk/ndk/26.2.11394342/toolchains/llvm/prebuilt/windows-x86_64/sysroot -DASR_EXPORTS -ID:/B612P/android_bridge/app/src/main/cpp/inc -ID:/B612P/android_bridge/app/src/main/cpp/inc/zdl -ID:/B612P/android_bridge/app/src/main/cpp/inc/hpp -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -std=c++11 -frtti -fexceptions -std=c++11 -frtti -fexceptions -fno-limit-debug-info  -fPIC -o CMakeFiles\\ASR.dir\\inference_helper.cpp.o -c D:\\B612P\\android_bridge\\app\\src\\main\\cpp\\inference_helper.cpp",
+  "file": "D:\\B612P\\android_bridge\\app\\src\\main\\cpp\\inference_helper.cpp"
+}
+]

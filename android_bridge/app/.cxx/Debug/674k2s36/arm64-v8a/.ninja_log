@@ -1,0 +1,5 @@
+# ninja log v5
+19	16335	8133644168688729	CMakeFiles/ASR.dir/inference.cpp.o	d3c0dbe87efd3e86
+59	17039	8133644175761986	CMakeFiles/ASR.dir/inference_helper.cpp.o	7504ca3ebf64a7fa
+2	17400	8133644179367640	CMakeFiles/ASR.dir/native-lib_pre_post.cpp.o	739d31771401570
+17401	18174	8133644187215638	D:/B612P/android_bridge/app/build/intermediates/cxx/Debug/674k2s36/obj/arm64-v8a/libASR.so	f818987072d1cdc
