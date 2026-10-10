@@ -1,1 +1,0 @@
-D:\B612P\android_bridge\app\src\main\cpp\CMakeLists.txt

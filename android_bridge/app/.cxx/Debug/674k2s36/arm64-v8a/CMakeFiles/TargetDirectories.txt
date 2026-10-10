@@ -1,3 +1,0 @@
-D:/B612P/android_bridge/app/.cxx/Debug/674k2s36/arm64-v8a/CMakeFiles/ASR.dir
-D:/B612P/android_bridge/app/.cxx/Debug/674k2s36/arm64-v8a/CMakeFiles/edit_cache.dir
-D:/B612P/android_bridge/app/.cxx/Debug/674k2s36/arm64-v8a/CMakeFiles/rebuild_cache.dir
