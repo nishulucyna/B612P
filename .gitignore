@@ -43,3 +43,6 @@ Thumbs.db
 *.wav.tmp
 temp_audio/
 recordings/
+
+# Cloned SDKs / External Repos
+qidk/
