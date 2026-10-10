@@ -59,3 +59,4 @@ qidk/
 runtime_state.json
 temp_audio/
 /whisper_dl/
+/certs/

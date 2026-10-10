@@ -18,3 +18,6 @@ scipy>=1.11
 sounddevice>=0.4
 pyttsx3>=2.90
 requests>=2.31
+# Phone access: QR code of the UI address, self-signed HTTPS certificate
+segno>=1.6
+cryptography>=42

@@ -47,6 +47,23 @@ python scripts\mic_check.py
 Leave the board's screen on with the app in front. Its banner is **green** when the encoder is on the NPU.
 The UI sidebar shows the same: "Whisper + LLM running on the Snapdragon NPU".
 
+## Using the UI on a phone
+
+The UI is one column on a phone (controls first, then the form). Three ways to open it:
+
+| Goal | How |
+|---|---|
+| **View and type** from a phone on the same Wi-Fi | `scripts\start_demo.bat`; it prints the Wi-Fi address and opens a **QR code** image. Scan it. |
+| **Use the phone's microphone** (cleaner than the laptop mic: hold it ~20 cm from your mouth) | `scripts\start_demo.bat -Https`. Browsers only allow microphone access on HTTPS, so the page uses a self-signed certificate: on the phone tap *Advanced > Proceed* once, then open *Use this device's microphone* and tap record. |
+| Phone plugged in by USB (no Wi-Fi) | `adb reverse` is set up by the launcher; open `http://localhost:8501` (or https with `-Https`) on the phone. |
+
+Notes:
+- Only the UI port is exposed (8501). The orchestrator API stays on 127.0.0.1. Anyone on the same Wi-Fi who opens the page can drive the demo.
+- Some guest or campus Wi-Fi blocks device-to-device traffic; if the page does not load, use the USB route or a phone hotspot.
+- **Do not open the UI in Chrome on the board while the 5 GB model is loaded** (`-OpenOnBoard`): measured, it left ~300 MB free and the bridge
+  stopped answering. Recover with `adb shell am force-stop com.android.chrome` and `scripts\start_demo.bat`.
+- The board's clock is days behind (it has no network time); the HTTPS certificate is back-dated to tolerate that.
+
 ## During the demo
 
 1. Click **Speak**, say a full report ("There was a water leak near Conference Room 2 around 10 AM.

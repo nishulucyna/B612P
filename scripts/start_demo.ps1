@@ -14,6 +14,8 @@ param(
     [switch]$AllowMock,
     [switch]$NoBrowser,
     [switch]$ReinstallApk,
+    [switch]$Https,         # serve the UI over HTTPS (self-signed) so a phone on the Wi-Fi may use its own microphone
+    [switch]$OpenOnBoard,   # EXPERIMENTAL: open the UI in Chrome on the board itself (see the warning below)
     [int]$ApiPort = 8000,
     [int]$UiPort = 8501
 )
@@ -116,17 +118,40 @@ for ($i = 0; $i -lt 40; $i++) {
 if (-not $up) { Fail "The orchestrator did not start on port $ApiPort." }
 Ok "orchestrator: http://127.0.0.1:$ApiPort  (NPU_BACKEND=$($env:NPU_BACKEND))"
 
-Start-Process -FilePath $py -WorkingDirectory $root -WindowStyle Minimized `
-    -ArgumentList @("-m", "streamlit", "run", "frontend/app.py", "--server.headless", "true",
-                    "--server.port", "$UiPort", "--browser.gatherUsageStats", "false")
+$scheme = $(if ($Https) { "https" } else { "http" })
+$uiArgs = @("-m", "streamlit", "run", "frontend/app.py", "--server.headless", "true",
+            "--server.address", "0.0.0.0", "--server.port", "$UiPort", "--browser.gatherUsageStats", "false")
+if ($Https) {
+    & $py scripts\make_cert.py
+    if ($LASTEXITCODE -ne 0) { Fail "Could not create the HTTPS certificate (pip install cryptography)." }
+    $uiArgs += @("--server.sslCertFile", "certs\lan.pem", "--server.sslKeyFile", "certs\lan.key")
+}
+Start-Process -FilePath $py -WorkingDirectory $root -WindowStyle Minimized -ArgumentList $uiArgs
 $up = $false
 for ($i = 0; $i -lt 40; $i++) {
     Start-Sleep -Seconds 1
     if (PortBusy $UiPort) { $up = $true; break }
 }
 if (-not $up) { Fail "The UI did not start on port $UiPort." }
-Ok "UI: http://localhost:$UiPort"
-if (-not $NoBrowser) { Start-Process "http://localhost:$UiPort" }
+Ok "UI: ${scheme}://localhost:$UiPort  (listening on all network interfaces)"
+
+# The board / a USB-connected phone reaches the UI as 'localhost' over the USB cable (works without Wi-Fi, and
+# 'localhost' is a secure origin, so the device microphone is allowed).
+& $adb reverse "tcp:$UiPort" "tcp:$UiPort" | Out-Null
+Ok "USB route: on the board, ${scheme}://localhost:$UiPort"
+if ($OpenOnBoard) {
+    Write-Host "  WARNING: a browser on the board competes with the 5 GB LLM for memory. In testing it left the board with" -ForegroundColor Yellow
+    Write-Host "           ~300 MB free and the bridge stopped answering. Use it only with the small Qwen model, and close" -ForegroundColor Yellow
+    Write-Host "           Chrome on the board (adb shell am force-stop com.android.chrome) if requests start failing." -ForegroundColor Yellow
+    & $adb shell am start -a android.intent.action.VIEW -d "${scheme}://localhost:$UiPort" | Out-Null
+    Write-Host "  opened Chrome on the board (open the bridge app again afterwards to see its status banner)"
+}
+if (-not $NoBrowser) { Start-Process "${scheme}://localhost:$UiPort" }
+
+$phoneArgs = @("scripts\phone_url.py", "--port", "$UiPort")
+if ($Https) { $phoneArgs += "--https" }
+if (-not $NoBrowser) { $phoneArgs += "--open" }
+& $py @phoneArgs
 
 Write-Host ""
 Write-Host "Demo is up." -ForegroundColor Green

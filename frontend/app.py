@@ -30,7 +30,7 @@ st.set_page_config(
     page_title="AI Incident Report Assistant · Qualcomm",
     page_icon="🛡️",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ── CSS ─────────────────────────────────────────────────────────────────────
@@ -255,6 +255,31 @@ label { color: #64748b !important; font-size: 0.78rem !important; font-weight: 5
 </style>
 """, unsafe_allow_html=True)
 
+# ── Phone layout ───────────────────────────────────────────────────────────────
+st.markdown("""
+<style>
+/* the controls live in the main page, so no sidebar is needed (and it would cover the report on a phone) */
+[data-testid="stSidebar"], [data-testid="collapsedControl"], [data-testid="stSidebarCollapsedControl"] { display: none !important; }
+.stButton > button { min-height: 46px; }
+/* secondary buttons (Undo, Sync, Reset): readable light-on-dark instead of pale text on white */
+/* (no ".stButton >" here: a button with a help tooltip is wrapped in an extra element, so that would not match) */
+button[data-testid="stBaseButton-secondary"] {
+  background: #1e293b !important; color: #e2e8f0 !important; border: 1px solid #475569 !important; }
+button[data-testid="stBaseButton-secondary"]:disabled { opacity: 0.5; }
+@media (max-width: 700px) {
+  .block-container { padding: 0.8rem 0.7rem 3.5rem !important; max-width: 100% !important; }
+  .top-banner { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; padding: 12px 14px !important; }
+  .top-banner > div:last-child { flex-wrap: wrap; }
+  .banner-title { font-size: 1.05rem !important; }
+  .banner-sub { font-size: 0.7rem !important; }
+  .stButton > button { min-height: 54px; font-size: 1.05rem !important; }
+  textarea, input { font-size: 16px !important; }          /* stops iOS zooming into the field */
+  h3 { font-size: 1.15rem !important; }
+  .chat-bub { font-size: 0.95rem !important; }
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ── Constants ────────────────────────────────────────────────────────────────
 MANDATORY_FIELDS = ["incident_type", "incident_location", "date_time", "immediate_actions_taken"]
 
@@ -355,6 +380,22 @@ def api_call(method: str, path: str, payload=None, timeout: float = 30):
     return r.json(), None
 
 
+def api_upload(path: str, data: bytes, filename: str = "phone.wav", timeout: float = 180):
+    """POST a recorded WAV (multipart field 'file'), e.g. from the phone's microphone. Same (json, error) result."""
+    try:
+        r = requests.post(API_BASE + path, files={"file": (filename, data, "audio/wav")}, timeout=timeout)
+    except requests.RequestException as e:
+        return None, (f"Cannot reach the orchestrator at {API_BASE} ({e.__class__.__name__}). "
+                      "Start it with scripts/start_demo.bat (or: python -m backend.server).")
+    if r.status_code >= 400:
+        try:
+            detail = r.json().get("detail", r.text)
+        except Exception:
+            detail = r.text
+        return None, f"Server said {r.status_code}: {detail}"
+    return r.json(), None
+
+
 def audio_quality_warning(info):
     """Plain-language advice when the last microphone recording was too poor for reliable recognition."""
     if not info:
@@ -417,15 +458,21 @@ if "hydrated" not in st.session_state:
     else:
         st.session_state.last_error = _err
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
-with st.sidebar:
+# Page layout slots, in the order they appear on the page: banner, alerts, controls.
+slot_banner = st.container()
+slot_alerts = st.container()
+slot_controls = st.container()
+
+# ── Controls: voice, type, conversation ──────────────────────────────────────
+# Rendered at the top of the main page instead of in the sidebar: on a phone the sidebar opens full screen and
+# hides the report, so every control would be one extra tap away. Side by side on a desktop, stacked on a phone.
+with slot_controls:
     st.markdown("### 🎙️ Voice Control")
-    st.markdown('<hr style="border-color:#1e3a5f;margin:6px 0 14px;">', unsafe_allow_html=True)
 
     # Live status of the orchestrator and the board
     _health, _herr = api_call("GET", "/api/health", timeout=4)
     if _herr:
-        st.markdown('<div style="background:#7f1d1d;color:#fff;padding:8px 10px;border-radius:8px;font-size:0.78rem;">'
+        st.markdown('<div style="background:#7f1d1d;color:#fff;padding:8px 10px;border-radius:8px;font-size:0.8rem;">'
                     '🔴 Orchestrator offline</div>', unsafe_allow_html=True)
     else:
         _eng = _health.get("engine", {})
@@ -441,94 +488,107 @@ with st.sidebar:
             _chip, _bg = "🟠 MOCK engine (not the board)", "#7c4a03"
         else:
             _chip, _bg = "🟠 Board not confirmed on NPU yet", "#7c4a03"
-        st.markdown(f'<div style="background:{_bg};color:#fff;padding:8px 10px;border-radius:8px;font-size:0.78rem;">'
+        st.markdown(f'<div style="background:{_bg};color:#fff;padding:8px 10px;border-radius:8px;font-size:0.8rem;">'
                     f'{_chip}<br><span style="opacity:.8">STT: {_stt or "-"} · LLM: {_llm or "-"}</span></div>',
                     unsafe_allow_html=True)
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-    # Mic pulsing icon
-    rec = st.session_state.recording
-    pulse_cls = "mic-pulse mic-pulse-active" if rec else "mic-pulse"
-    mic_icon  = "⏹" if rec else "🎙️"
-    mic_lbl   = '<span class="mic-label mic-label-active">🔴 Recording — Streaming to Whisper NPU</span>' if rec \
-                else '<span class="mic-label">Idle — press to record</span>'
+    ctl_left, ctl_right = st.columns([1, 1.15], gap="large")
 
-    st.markdown(f"""
-    <div class="mic-area">
-        <div class="{pulse_cls}">{mic_icon}</div>
-        {mic_lbl}
-    </div>
-    """, unsafe_allow_html=True)
+    with ctl_left:
+        # Mic pulsing icon
+        rec = st.session_state.recording
+        pulse_cls = "mic-pulse mic-pulse-active" if rec else "mic-pulse"
+        mic_icon  = "⏹" if rec else "🎙️"
+        mic_lbl   = '<span class="mic-label mic-label-active">🔴 Recording — Streaming to Whisper NPU</span>' if rec \
+                    else '<span class="mic-label">Idle — press Speak</span>'
 
-    st.caption("Press Speak, talk, then pause. It stops by itself after ~1.5 s of silence.")
-    if st.button("🎙️ Speak", use_container_width=True, key="mic_btn", type="primary"):
-        with st.spinner("🔴 Listening - speak now. After you pause, the board transcribes and extracts the fields..."):
-            _resp, _err = api_call("POST", "/api/audio/turn", timeout=180)
-        apply_turn(_resp, _err)
-        st.rerun()
+        st.markdown(f"""
+        <div class="mic-area">
+            <div class="{pulse_cls}">{mic_icon}</div>
+            {mic_lbl}
+        </div>
+        """, unsafe_allow_html=True)
 
-    if st.button("↩ Undo last turn", use_container_width=True, key="undo_btn",
-                 help="Discard the last thing you said (e.g. it was misheard) and say it again."):
-        _resp, _err = api_call("POST", "/api/undo", timeout=15)
-        if _err:
-            st.session_state.last_error = _err
-        else:
-            st.session_state.last_error = None
-            st.session_state.audio_warning = None
-            st.session_state.contract = _resp["state"]
-            sync_transcript()
-        st.rerun()
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### 💬 Conversation")
-    st.markdown('<hr style="border-color:#1e3a5f;margin:6px 0 12px;">', unsafe_allow_html=True)
-
-    transcript = st.session_state.transcript
-    if not transcript:
-        st.markdown('<p style="color:#334155;font-size:0.8rem;font-style:italic;">No conversation yet.</p>', unsafe_allow_html=True)
-    else:
-        for msg in transcript[-8:]:   # show last 8 messages
-            role = msg["role"]
-            text = msg["text"]
-            t    = msg.get("ts", "")
-            if role == "user":
-                st.markdown(f"""
-                <div class="chat-wrap">
-                    <div class="chat-av chat-av-u">🧑</div>
-                    <div>
-                        <div class="chat-bub chat-bub-u">{text}</div>
-                        <div class="chat-ts">{t} · You</div>
-                    </div>
-                </div>""", unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div class="chat-wrap">
-                    <div class="chat-av chat-av-a">🤖</div>
-                    <div>
-                        <div class="chat-bub chat-bub-a">{text}</div>
-                        <div class="chat-ts">{t} · Assistant</div>
-                    </div>
-                </div>""", unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### ⌨️ Type Input")
-    st.markdown('<p style="font-size:0.72rem;color:#475569;margin:-6px 0 8px;">Simulate voice (no hardware needed)</p>', unsafe_allow_html=True)
-
-    typed = st.text_area("Incident description", height=90,
-                         placeholder='"A pipe burst on the second floor..."',
-                         key="typed_input", label_visibility="visible")
-    if st.button("▶ Process Input", use_container_width=True, key="process_typed", type="primary"):
-        txt = typed.strip()
-        if txt:
-            with st.spinner("Processing on the board..."):
-                _resp, _err = api_call("POST", "/api/text/turn", {"text": txt}, timeout=180)
+        st.caption("Speak uses the laptop's microphone: talk, then pause (it stops by itself after ~2 s of quiet).")
+        b_speak, b_undo = st.columns([2, 1])
+        with b_speak:
+            speak_clicked = st.button("🎙️ Speak", use_container_width=True, key="mic_btn", type="primary")
+        with b_undo:
+            undo_clicked = st.button("↩ Undo", use_container_width=True, key="undo_btn",
+                                     help="Discard the last thing you said (e.g. it was misheard) and say it again.")
+        if speak_clicked:
+            with st.spinner("🔴 Listening - speak now. After you pause, the board transcribes and extracts the fields..."):
+                _resp, _err = api_call("POST", "/api/audio/turn", timeout=180)
             apply_turn(_resp, _err)
             st.rerun()
-        else:
-            st.warning("Please type something first.")
+        if undo_clicked:
+            _resp, _err = api_call("POST", "/api/undo", timeout=15)
+            if _err:
+                st.session_state.last_error = _err
+            else:
+                st.session_state.last_error = None
+                st.session_state.audio_warning = None
+                st.session_state.contract = _resp["state"]
+                sync_transcript()
+            st.rerun()
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown('<p style="color:#1e3a5f;font-size:0.62rem;text-align:center;margin-top:12px;">Sector 4 · feat/form-ui · Qualcomm Megathon X</p>', unsafe_allow_html=True)
+        # The phone (or any browser device) can be the microphone: close to the mouth it is far cleaner than the
+        # laptop mic. Browsers only allow microphone access on HTTPS or on localhost (e.g. over USB, see docs).
+        with st.expander("📱 Use this device's microphone (phone)", expanded=False):
+            _nonce = st.session_state.get("mic_nonce", 0)
+            _clip = st.audio_input("Tap to record, tap again to send", sample_rate=16000, key=f"phone_mic_{_nonce}")
+            st.caption("Hold the phone about 20 cm from your mouth. If the browser refuses the microphone "
+                       "(a plain http:// address on the network), open the page through the USB link or use Speak / typing.")
+            if _clip is not None:
+                with st.spinner("Sending to the board..."):
+                    _resp, _err = api_upload("/api/audio/turn", _clip.getvalue())
+                st.session_state.mic_nonce = _nonce + 1   # a fresh recorder for the next turn
+                apply_turn(_resp, _err)
+                st.rerun()
+
+        with st.expander("⌨️ Type instead", expanded=False):
+            typed = st.text_area("Incident description", height=90,
+                                 placeholder='"A pipe burst on the second floor..."',
+                                 key="typed_input", label_visibility="collapsed")
+            if st.button("▶ Process Input", use_container_width=True, key="process_typed", type="primary"):
+                txt = typed.strip()
+                if txt:
+                    with st.spinner("Processing on the board..."):
+                        _resp, _err = api_call("POST", "/api/text/turn", {"text": txt}, timeout=180)
+                    apply_turn(_resp, _err)
+                    st.rerun()
+                else:
+                    st.warning("Please type something first.")
+
+    with ctl_right:
+        st.markdown("### 💬 Conversation")
+        transcript = st.session_state.transcript
+        if not transcript:
+            st.markdown('<p style="color:#64748b;font-size:0.85rem;font-style:italic;">No conversation yet.</p>', unsafe_allow_html=True)
+        else:
+            for msg in transcript[-8:]:   # show last 8 messages
+                role = msg["role"]
+                text = msg["text"]
+                t    = msg.get("ts", "")
+                if role == "user":
+                    st.markdown(f"""
+                    <div class="chat-wrap">
+                        <div class="chat-av chat-av-u">🧑</div>
+                        <div>
+                            <div class="chat-bub chat-bub-u">{text}</div>
+                            <div class="chat-ts">{t} · You</div>
+                        </div>
+                    </div>""", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div class="chat-wrap">
+                        <div class="chat-av chat-av-a">🤖</div>
+                        <div>
+                            <div class="chat-bub chat-bub-a">{text}</div>
+                            <div class="chat-ts">{t} · Assistant</div>
+                        </div>
+                    </div>""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════
 #  MAIN CONTENT
@@ -539,12 +599,12 @@ status   = contract.get("status", "collecting")
 missing  = set(contract.get("missing_mandatory_fields", []))
 
 if st.session_state.get("last_error"):
-    st.error(st.session_state.last_error)
+    slot_alerts.error(st.session_state.last_error)
 if st.session_state.get("audio_warning"):
-    st.warning(st.session_state.audio_warning)
+    slot_alerts.warning(st.session_state.audio_warning)
 
 # ── Top Banner ───────────────────────────────────────────────────────────────
-st.markdown(f"""
+slot_banner.markdown(f"""
 <div class="top-banner">
     <div class="banner-left">
         <div class="banner-icon">🛡️</div>
