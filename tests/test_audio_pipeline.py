@@ -28,7 +28,9 @@ def test_record_audio_writes_three_seconds_of_required_wav(
     monkeypatch.setitem(__import__("sys").modules, "sounddevice", _FakeSoundDevice)
     monkeypatch.setattr(
         "builtins.input",
-        lambda prompt: "" if prompt.endswith("...") else (_ for _ in ()).throw(EOFError),
+        lambda prompt: (_ for _ in ()).throw(
+            AssertionError("default recording must not read terminal input")
+        ),
     )
 
     output_path = tmp_path / "mic_input.wav"
@@ -40,6 +42,33 @@ def test_record_audio_writes_three_seconds_of_required_wav(
         assert wav_file.getnchannels() == 1
         assert wav_file.getsampwidth() == 2
         assert wav_file.getnframes() == 16_000 * 3
+
+
+def test_interactive_recording_uses_terminal_start_and_stop(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setitem(__import__("sys").modules, "sounddevice", _FakeSoundDevice)
+    prompts = []
+
+    def fake_input(prompt):
+        prompts.append(prompt)
+        if len(prompts) == 1:
+            return ""
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", fake_input)
+
+    result = audio_pipeline.record_audio(
+        str(tmp_path / "interactive.wav"),
+        max_seconds=3,
+        interactive=True,
+    )
+
+    assert result.endswith("interactive.wav")
+    assert prompts == [
+        "Press Enter to start recording...",
+        "Recording... press Enter to stop.",
+    ]
 
 
 def test_speak_tts_uses_offline_engine(monkeypatch):

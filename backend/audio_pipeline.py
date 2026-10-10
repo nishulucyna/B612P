@@ -13,7 +13,7 @@ import time
 import wave
 from pathlib import Path
 from queue import Empty, Queue
-from typing import Any, Callable
+from typing import Any
 
 SAMPLE_RATE = 16_000
 CHANNELS = 1
@@ -34,12 +34,13 @@ def _rms_int16(data: bytes) -> float:
 def record_audio(
     output_path: str = "temp_audio/input.wav",
     max_seconds: int = 15,
+    interactive: bool = False,
 ) -> str:
     """Record mono 16 kHz 16-bit PCM WAV audio and return its file path.
 
-    Press Enter once to begin recording.  Press Enter again to stop manually;
-    after speech is detected, 1.5 seconds of silence also stops the recording.
-    Recording always stops at ``max_seconds``.
+    By default, recording starts immediately and uses VAD/silence detection.
+    When ``interactive`` is true, Enter starts recording and a second Enter
+    stops it manually; VAD and the maximum duration remain safety fallbacks.
     """
     if max_seconds <= 0:
         raise ValueError("max_seconds must be greater than zero")
@@ -52,7 +53,8 @@ def record_audio(
             "Install it with: pip install sounddevice"
         ) from exc
 
-    input("Press Enter to start recording...")
+    if interactive:
+        input("Press Enter to start recording...")
 
     blocks: Queue[bytes] = Queue()
     stop_event = threading.Event()
@@ -87,12 +89,13 @@ def record_audio(
             blocksize=BLOCK_SIZE,
             callback=callback,
         ):
-            stop_thread = threading.Thread(
-                target=wait_for_manual_stop,
-                name="audio-stop-listener",
-                daemon=True,
-            )
-            stop_thread.start()
+            if interactive:
+                stop_thread = threading.Thread(
+                    target=wait_for_manual_stop,
+                    name="audio-stop-listener",
+                    daemon=True,
+                )
+                stop_thread.start()
 
             while not stop_event.is_set():
                 if time.monotonic() - started_at >= max_seconds:
