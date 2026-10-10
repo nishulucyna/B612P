@@ -40,7 +40,8 @@ def main() -> int:
     room = statistics.median(blocks[:5]) if len(blocks) >= 5 else 0.0
     loud = max(blocks) if blocks else 0.0
     threshold = min(max(ap.RMS_THRESHOLD, room * ap.NOISE_MARGIN), ap.MAX_RMS_THRESHOLD)
-    print(f"\nListened for {took:.1f} s ({len(samples) / ap.SAMPLE_RATE:.1f} s of audio; the cap is 15 s).")
+    print(f"\nCapture path: {ap.last_input_description}")
+    print(f"Listened for {took:.1f} s ({len(samples) / ap.SAMPLE_RATE:.1f} s of audio; the cap is 15 s).")
     print(f"Room noise ~{room:.0f}, speech threshold {threshold:.0f}, your loudest 0.1 s ~{loud:.0f}.")
     if took >= 14.5:
         print("-> It ran to the cap: it never heard a clear pause. Speak closer/louder, or reduce background noise.")

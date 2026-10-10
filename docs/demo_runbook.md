@@ -71,6 +71,8 @@ the time and the action taken, then "It happened at 2 PM and we turned off the m
 | Red UI banner / "NPU problem" | Read the text on the board's screen banner and `adb logcat -s NpuBridge`. Run `start_demo` again. |
 | "Cannot reach the orchestrator" in the UI | `scripts\stop_demo.ps1`, then `scripts\start_demo.bat`. |
 | Speak records for the full 15 s | It did not hear a clear pause. Reduce background noise, move closer, run `scripts\mic_check.py` to see levels. |
+| Words in the transcript are wrong | Check the mic path first: `scripts\mic_check.py` prints "Capture path". It should say `WASAPI exclusive, raw ...`. If it says `default input, 16 kHz` the raw mode could not open (another app is using the mic): close it. The old path garbles speech (see below). |
+| Another app needs the microphone | While recording, the raw mode takes the mic exclusively. Set `AUDIO_INPUT=legacy` to use the normal shared path (worse recognition). `AUDIO_INPUT_DEVICE=<n>` picks another input (`python -m sounddevice`). |
 | Wrong words in the transcript | Whisper-tiny is small and mishears unusual words. Speak clearly, or type the report in the sidebar box. |
 | A turn fails once | The bridge retries once by itself. If it persists, click Reset All and repeat. |
 | Board is dead during the show | `scripts\start_demo.bat -AllowMock` runs the laptop mock (orange "MOCK" banner). Say so; it is not on-device. |
@@ -94,6 +96,17 @@ Swap (then run `start_demo` again):
   `NPU_ALERT` lines if anything is not on the NPU.
 - `scripts\demo_selftest.py` checks that every turn reports `last_stt_backend` and `last_llm_backend` as `device`.
 - To show there is no cloud: turn off the laptop's and the board's Wi-Fi, then run the self-test.
+
+## Microphone notes (measured)
+
+- Windows' normal capture path (MME at 16 kHz) applies noise suppression, gain control and a low-quality rate
+  conversion. With the same played sentence it gave "There was a water between you and the other" (and often
+  "[Music]"); raw WASAPI exclusive capture at the mic's native rate gave "...water leak here conference for two round
+  10 AM. Maintenance has already been in the area". `record_audio` uses the raw path first and falls back automatically.
+- Do not test by playing the sentence through the laptop's own speakers and expect clean results: the speaker is quiet and
+  the room is noisy, so it is a worst case. Speak to the mic from ~20-30 cm, or play from a phone held near it.
+- Whisper size matters on hard audio (offline PyTorch check on our recordings): tiny garbles room names and times;
+  base usually recovers "conference room 2 ... around 10 a.m."; small is best. The board currently runs **tiny**.
 
 ## Known limits
 
