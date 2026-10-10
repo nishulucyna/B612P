@@ -17,6 +17,15 @@ public class BridgeService extends Service {
 
     public static final String EXTRA_ALLOW_CPU_FALLBACK = "allow_cpu_fallback";
 
+    /** The engines, for the on-device UI to call directly (null until the service has started). */
+    public static SttEngine sttEngine() {
+        return stt;
+    }
+
+    public static LlmEngine llmEngine() {
+        return llm;
+    }
+
     public static final int STATE_LOADING = 0;
     public static final int STATE_OK = 1;
     public static final int STATE_ALERT = 2;

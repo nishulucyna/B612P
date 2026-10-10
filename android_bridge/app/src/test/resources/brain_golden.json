@@ -1,0 +1,487 @@
+{
+ "initial_prompt": "Please describe what happened, where, and when.",
+ "retry_prompt": "Sorry, I didn't catch that. Could you say it again?",
+ "prompts": [
+  {
+   "transcript": "There was a water leak near Conference Room 2 around 10 AM. Maintenance has already isolated the area.",
+   "known": {
+    "incident_type": null,
+    "severity_level": null,
+    "incident_location": null,
+    "date_time": null,
+    "persons_involved": null,
+    "equipment_asset_involved": null,
+    "incident_description": null,
+    "immediate_actions_taken": null,
+    "witness_information": null,
+    "recommended_follow_up_action": null
+   },
+   "prompt": "You are an on-device AI Incident Report Assistant for Qualcomm Snapdragon devices.\nYour task is to extract structured incident data from natural spoken user reports.\n\nExtract only what the user mentioned or clearly implied into this JSON schema:\n{\n  \"incident_type\": string or null,\n  \"severity_level\": \"Low\" | \"Medium\" | \"High\" | \"Critical\" | null,\n  \"incident_location\": string or null,\n  \"date_time\": string or null,\n  \"persons_involved\": string or null,\n  \"equipment_asset_involved\": string or null,\n  \"incident_description\": string or null,\n  \"immediate_actions_taken\": string or null,\n  \"witness_information\": string or null,\n  \"recommended_follow_up_action\": string or null\n}\n\nRules:\n1. Return ONLY a valid JSON object. No preamble, no markdown backticks, no explanations.\n2. If an item was not mentioned, set its value to null.\n3. If partial existing fields are provided, preserve them unless the user explicitly updates or corrects them.\n4. Estimate severity_level if strongly implied (e.g., \"burst pipe flooded room\" -> \"High\", \"minor drip\" -> \"Low\").\n\n\nCURRENT KNOWN INFORMATION:\n{}\n\nLATEST USER TRANSCRIPT:\n\"There was a water leak near Conference Room 2 around 10 AM. Maintenance has already isolated the area.\"\n\nJSON OUTPUT:"
+  },
+  {
+   "transcript": "It was 10 AM",
+   "known": {
+    "incident_type": "Water Leak",
+    "severity_level": null,
+    "incident_location": "Conference Room 2",
+    "date_time": null,
+    "persons_involved": null,
+    "equipment_asset_involved": null,
+    "incident_description": null,
+    "immediate_actions_taken": null,
+    "witness_information": null,
+    "recommended_follow_up_action": null
+   },
+   "prompt": "You are an on-device AI Incident Report Assistant for Qualcomm Snapdragon devices.\nYour task is to extract structured incident data from natural spoken user reports.\n\nExtract only what the user mentioned or clearly implied into this JSON schema:\n{\n  \"incident_type\": string or null,\n  \"severity_level\": \"Low\" | \"Medium\" | \"High\" | \"Critical\" | null,\n  \"incident_location\": string or null,\n  \"date_time\": string or null,\n  \"persons_involved\": string or null,\n  \"equipment_asset_involved\": string or null,\n  \"incident_description\": string or null,\n  \"immediate_actions_taken\": string or null,\n  \"witness_information\": string or null,\n  \"recommended_follow_up_action\": string or null\n}\n\nRules:\n1. Return ONLY a valid JSON object. No preamble, no markdown backticks, no explanations.\n2. If an item was not mentioned, set its value to null.\n3. If partial existing fields are provided, preserve them unless the user explicitly updates or corrects them.\n4. Estimate severity_level if strongly implied (e.g., \"burst pipe flooded room\" -> \"High\", \"minor drip\" -> \"Low\").\n\n\nCURRENT KNOWN INFORMATION:\n{\n  \"incident_type\": \"Water Leak\",\n  \"incident_location\": \"Conference Room 2\"\n}\n\nLATEST USER TRANSCRIPT:\n\"It was 10 AM\"\n\nJSON OUTPUT:"
+  }
+ ],
+ "clean_and_parse": [
+  {
+   "raw": "{\"incident_type\": \"Water Leak\", \"severity_level\": \"medium\", \"incident_location\": \"Conference Room 2\"}",
+   "parsed": {
+    "incident_type": "Water Leak",
+    "severity_level": "medium",
+    "incident_location": "Conference Room 2"
+   }
+  },
+  {
+   "raw": "```json\n{\"incident_type\": \"Pipe burst\", \"date_time\": null}\n```",
+   "parsed": {
+    "incident_type": "Pipe burst",
+    "date_time": null
+   }
+  },
+  {
+   "raw": "Sure! Here you go: {\"incident_type\": \"Fire\", \"persons_involved\": [\"Ravi\", \"Asha\"]} Hope that helps.",
+   "parsed": {
+    "incident_type": "Fire",
+    "persons_involved": [
+     "Ravi",
+     "Asha"
+    ]
+   }
+  },
+  {
+   "raw": "{\"incident_type\": \"Spill\", \"severity_level\": \"Catastrophic\", \"witness_information\": \"  \"",
+   "parsed": {
+    "incident_type": "Spill",
+    "severity_level": "Catastrophic",
+    "witness_information": "  "
+   }
+  },
+  {
+   "raw": "{\"incident_type\": \"null\", \"equipment_asset_involved\": {\"a\": 1}, \"incident_description\": 42}",
+   "parsed": {
+    "incident_type": "null",
+    "equipment_asset_involved": {
+     "a": 1
+    },
+    "incident_description": 42
+   }
+  },
+  {
+   "raw": "not json at all",
+   "parsed": {}
+  },
+  {
+   "raw": "{\"incident_type\": \"Leak\"}}",
+   "parsed": {}
+  }
+ ],
+ "sanitize": [
+  {
+   "raw": "{\"incident_type\": \"Water Leak\", \"severity_level\": \"medium\", \"incident_location\": \"Conference Room 2\"}",
+   "sanitized": {
+    "incident_type": "Water Leak",
+    "severity_level": "Medium",
+    "incident_location": "Conference Room 2",
+    "date_time": null,
+    "persons_involved": null,
+    "equipment_asset_involved": null,
+    "incident_description": null,
+    "immediate_actions_taken": null,
+    "witness_information": null,
+    "recommended_follow_up_action": null
+   }
+  },
+  {
+   "raw": "```json\n{\"incident_type\": \"Pipe burst\", \"date_time\": null}\n```",
+   "sanitized": {
+    "incident_type": "Pipe burst",
+    "severity_level": null,
+    "incident_location": null,
+    "date_time": null,
+    "persons_involved": null,
+    "equipment_asset_involved": null,
+    "incident_description": null,
+    "immediate_actions_taken": null,
+    "witness_information": null,
+    "recommended_follow_up_action": null
+   }
+  },
+  {
+   "raw": "Sure! Here you go: {\"incident_type\": \"Fire\", \"persons_involved\": [\"Ravi\", \"Asha\"]} Hope that helps.",
+   "sanitized": {
+    "incident_type": "Fire",
+    "severity_level": null,
+    "incident_location": null,
+    "date_time": null,
+    "persons_involved": "Ravi, Asha",
+    "equipment_asset_involved": null,
+    "incident_description": null,
+    "immediate_actions_taken": null,
+    "witness_information": null,
+    "recommended_follow_up_action": null
+   }
+  },
+  {
+   "raw": "{\"incident_type\": \"Spill\", \"severity_level\": \"Catastrophic\", \"witness_information\": \"  \"",
+   "sanitized": {
+    "incident_type": "Spill",
+    "severity_level": null,
+    "incident_location": null,
+    "date_time": null,
+    "persons_involved": null,
+    "equipment_asset_involved": null,
+    "incident_description": null,
+    "immediate_actions_taken": null,
+    "witness_information": null,
+    "recommended_follow_up_action": null
+   }
+  },
+  {
+   "raw": "{\"incident_type\": \"null\", \"equipment_asset_involved\": {\"a\": 1}, \"incident_description\": 42}",
+   "sanitized": {
+    "incident_type": null,
+    "severity_level": null,
+    "incident_location": null,
+    "date_time": null,
+    "persons_involved": null,
+    "equipment_asset_involved": null,
+    "incident_description": "42",
+    "immediate_actions_taken": null,
+    "witness_information": null,
+    "recommended_follow_up_action": null
+   }
+  },
+  {
+   "raw": "not json at all",
+   "sanitized": {
+    "incident_type": null,
+    "severity_level": null,
+    "incident_location": null,
+    "date_time": null,
+    "persons_involved": null,
+    "equipment_asset_involved": null,
+    "incident_description": null,
+    "immediate_actions_taken": null,
+    "witness_information": null,
+    "recommended_follow_up_action": null
+   }
+  },
+  {
+   "raw": "{\"incident_type\": \"Leak\"}}",
+   "sanitized": {
+    "incident_type": null,
+    "severity_level": null,
+    "incident_location": null,
+    "date_time": null,
+    "persons_involved": null,
+    "equipment_asset_involved": null,
+    "incident_description": null,
+    "immediate_actions_taken": null,
+    "witness_information": null,
+    "recommended_follow_up_action": null
+   }
+  }
+ ],
+ "sequences": {
+  "complete_in_one_turn": [
+   {
+    "user": "There was a water leak near Conference Room 2 around 10 AM. Maintenance has already isolated the area.",
+    "raw_llm": "{\"incident_type\": \"Water Leak\", \"severity_level\": \"Medium\", \"incident_location\": \"Conference Room 2\", \"date_time\": \"10 AM\", \"immediate_actions_taken\": \"Maintenance has already isolated the area\"}",
+    "result": {
+     "status": "complete",
+     "missing": [],
+     "next_prompt": null,
+     "fields": {
+      "incident_type": "Water Leak",
+      "severity_level": "Medium",
+      "incident_location": "Conference Room 2",
+      "date_time": "10 AM",
+      "persons_involved": null,
+      "equipment_asset_involved": null,
+      "incident_description": null,
+      "immediate_actions_taken": "Maintenance has already isolated the area",
+      "witness_information": null,
+      "recommended_follow_up_action": null
+     },
+     "tool_call_function": "populate_incident_form",
+     "summary_for_tts": "Incident report ready. Water Leak at Conference Room 2, recorded at 10 AM. Action taken: Maintenance has already isolated the area. Please review on screen and confirm submission."
+    }
+   }
+  ],
+  "two_turn_clarification": [
+   {
+    "user": "A pipe burst on the second floor!",
+    "raw_llm": "{\"incident_type\": \"Pipe Burst\", \"severity_level\": \"High\", \"incident_location\": \"Second Floor\"}",
+    "result": {
+     "status": "collecting",
+     "missing": [
+      "date_time",
+      "immediate_actions_taken"
+     ],
+     "next_prompt": "Got that. At what time or date did this occur?",
+     "fields": {
+      "incident_type": "Pipe Burst",
+      "severity_level": "High",
+      "incident_location": "Second Floor",
+      "date_time": null,
+      "persons_involved": null,
+      "equipment_asset_involved": null,
+      "incident_description": null,
+      "immediate_actions_taken": null,
+      "witness_information": null,
+      "recommended_follow_up_action": null
+     },
+     "tool_call_function": null,
+     "summary_for_tts": null
+    }
+   },
+   {
+    "user": "It happened at 2 PM and we turned off the main valve.",
+    "raw_llm": "{\"date_time\": \"2 PM\", \"immediate_actions_taken\": \"Turned off the main water valve\", \"incident_type\": null}",
+    "result": {
+     "status": "complete",
+     "missing": [],
+     "next_prompt": null,
+     "fields": {
+      "incident_type": "Pipe Burst",
+      "severity_level": "High",
+      "incident_location": "Second Floor",
+      "date_time": "2 PM",
+      "persons_involved": null,
+      "equipment_asset_involved": null,
+      "incident_description": null,
+      "immediate_actions_taken": "Turned off the main water valve",
+      "witness_information": null,
+      "recommended_follow_up_action": null
+     },
+     "tool_call_function": "populate_incident_form",
+     "summary_for_tts": "Incident report ready. Pipe Burst at Second Floor, recorded at 2 PM. Action taken: Turned off the main water valve. Please review on screen and confirm submission."
+    }
+   }
+  ],
+  "asks_for_each_missing_field_in_turn": [
+   {
+    "user": "Something happened.",
+    "raw_llm": "{\"incident_description\": \"Something happened\"}",
+    "result": {
+     "status": "collecting",
+     "missing": [
+      "incident_type",
+      "incident_location",
+      "date_time",
+      "immediate_actions_taken"
+     ],
+     "next_prompt": "Could you clarify what kind of incident took place?",
+     "fields": {
+      "incident_type": null,
+      "severity_level": null,
+      "incident_location": null,
+      "date_time": null,
+      "persons_involved": null,
+      "equipment_asset_involved": null,
+      "incident_description": "Something happened",
+      "immediate_actions_taken": null,
+      "witness_information": null,
+      "recommended_follow_up_action": null
+     },
+     "tool_call_function": null,
+     "summary_for_tts": null
+    }
+   },
+   {
+    "user": "It was a fire.",
+    "raw_llm": "{\"incident_type\": \"Fire\"}",
+    "result": {
+     "status": "collecting",
+     "missing": [
+      "incident_location",
+      "date_time",
+      "immediate_actions_taken"
+     ],
+     "next_prompt": "Understood. Where did this Fire occur?",
+     "fields": {
+      "incident_type": "Fire",
+      "severity_level": null,
+      "incident_location": null,
+      "date_time": null,
+      "persons_involved": null,
+      "equipment_asset_involved": null,
+      "incident_description": "Something happened",
+      "immediate_actions_taken": null,
+      "witness_information": null,
+      "recommended_follow_up_action": null
+     },
+     "tool_call_function": null,
+     "summary_for_tts": null
+    }
+   },
+   {
+    "user": "In the warehouse.",
+    "raw_llm": "{\"incident_location\": \"Warehouse\"}",
+    "result": {
+     "status": "collecting",
+     "missing": [
+      "date_time",
+      "immediate_actions_taken"
+     ],
+     "next_prompt": "Got that. At what time or date did this occur?",
+     "fields": {
+      "incident_type": "Fire",
+      "severity_level": null,
+      "incident_location": "Warehouse",
+      "date_time": null,
+      "persons_involved": null,
+      "equipment_asset_involved": null,
+      "incident_description": "Something happened",
+      "immediate_actions_taken": null,
+      "witness_information": null,
+      "recommended_follow_up_action": null
+     },
+     "tool_call_function": null,
+     "summary_for_tts": null
+    }
+   },
+   {
+    "user": "At noon.",
+    "raw_llm": "{\"date_time\": \"noon\"}",
+    "result": {
+     "status": "collecting",
+     "missing": [
+      "immediate_actions_taken"
+     ],
+     "next_prompt": "Understood. Has any immediate action or containment been taken yet?",
+     "fields": {
+      "incident_type": "Fire",
+      "severity_level": null,
+      "incident_location": "Warehouse",
+      "date_time": "noon",
+      "persons_involved": null,
+      "equipment_asset_involved": null,
+      "incident_description": "Something happened",
+      "immediate_actions_taken": null,
+      "witness_information": null,
+      "recommended_follow_up_action": null
+     },
+     "tool_call_function": null,
+     "summary_for_tts": null
+    }
+   },
+   {
+    "user": "We evacuated.",
+    "raw_llm": "{\"immediate_actions_taken\": \"Evacuated\"}",
+    "result": {
+     "status": "complete",
+     "missing": [],
+     "next_prompt": null,
+     "fields": {
+      "incident_type": "Fire",
+      "severity_level": null,
+      "incident_location": "Warehouse",
+      "date_time": "noon",
+      "persons_involved": null,
+      "equipment_asset_involved": null,
+      "incident_description": "Something happened",
+      "immediate_actions_taken": "Evacuated",
+      "witness_information": null,
+      "recommended_follow_up_action": null
+     },
+     "tool_call_function": "populate_incident_form",
+     "summary_for_tts": "Incident report ready. Fire at Warehouse, recorded at noon. Action taken: Evacuated. Please review on screen and confirm submission."
+    }
+   }
+  ],
+  "garbage_llm_output_keeps_state": [
+   {
+    "user": "A pipe burst.",
+    "raw_llm": "{\"incident_type\": \"Pipe Burst\"}",
+    "result": {
+     "status": "collecting",
+     "missing": [
+      "incident_location",
+      "date_time",
+      "immediate_actions_taken"
+     ],
+     "next_prompt": "Understood. Where did this Pipe Burst occur?",
+     "fields": {
+      "incident_type": "Pipe Burst",
+      "severity_level": null,
+      "incident_location": null,
+      "date_time": null,
+      "persons_involved": null,
+      "equipment_asset_involved": null,
+      "incident_description": null,
+      "immediate_actions_taken": null,
+      "witness_information": null,
+      "recommended_follow_up_action": null
+     },
+     "tool_call_function": null,
+     "summary_for_tts": null
+    }
+   },
+   {
+    "user": "Um.",
+    "raw_llm": "I could not parse that",
+    "result": {
+     "status": "collecting",
+     "missing": [
+      "incident_location",
+      "date_time",
+      "immediate_actions_taken"
+     ],
+     "next_prompt": "Understood. Where did this Pipe Burst occur?",
+     "fields": {
+      "incident_type": "Pipe Burst",
+      "severity_level": null,
+      "incident_location": null,
+      "date_time": null,
+      "persons_involved": null,
+      "equipment_asset_involved": null,
+      "incident_description": null,
+      "immediate_actions_taken": null,
+      "witness_information": null,
+      "recommended_follow_up_action": null
+     },
+     "tool_call_function": null,
+     "summary_for_tts": null
+    }
+   }
+  ]
+ },
+ "blank": {
+  "status": "collecting",
+  "missing": [
+   "incident_type",
+   "incident_location",
+   "date_time",
+   "immediate_actions_taken"
+  ],
+  "next_prompt": "Please describe what happened, where, and when.",
+  "fields": {
+   "incident_type": null,
+   "severity_level": null,
+   "incident_location": null,
+   "date_time": null,
+   "persons_involved": null,
+   "equipment_asset_involved": null,
+   "incident_description": null,
+   "immediate_actions_taken": null,
+   "witness_information": null,
+   "recommended_follow_up_action": null
+  },
+  "tool_call_function": null,
+  "summary_for_tts": null
+ }
+}
