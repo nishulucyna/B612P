@@ -355,12 +355,36 @@ def api_call(method: str, path: str, payload=None, timeout: float = 30):
     return r.json(), None
 
 
+def audio_quality_warning(info):
+    """Plain-language advice when the last microphone recording was too poor for reliable recognition."""
+    if not info:
+        return None
+    if not info.get("speech_detected", True):
+        return "No clear speech was heard. Speak louder or closer to the microphone, then try again."
+    snr = info.get("snr_db")
+    if snr is not None and snr < 12:
+        return (f"The recording was noisy or faint (about {snr:.0f} dB signal-to-noise; the on-board speech model "
+                "needs about 20 dB). If the text below looks wrong, press Undo last turn, move to 20-30 cm from the "
+                "microphone and speak again.")
+    return None
+
+
+def sync_transcript():
+    """Rebuild the conversation list from the server (used after Undo)."""
+    tr, _ = api_call("GET", "/api/transcript", timeout=5)
+    st.session_state.transcript = [
+        {"role": "ai" if m["role"] == "assistant" else "user", "text": m["text"], "ts": m["timestamp"][11:19]}
+        for m in (tr or [])
+    ]
+
+
 def apply_turn(resp, err):
     """Fold one /api/*/turn response into the UI state."""
     if err:
         st.session_state.last_error = err
         return
     st.session_state.last_error = None
+    st.session_state.audio_warning = audio_quality_warning(resp.get("audio"))
     if resp.get("user_transcript"):
         st.session_state.transcript.append({"role": "user", "text": resp["user_transcript"], "ts": ts()})
     st.session_state.contract = resp["state"]
@@ -378,6 +402,7 @@ if "transcript"  not in st.session_state: st.session_state.transcript  = []
 if "recording"   not in st.session_state: st.session_state.recording   = False
 if "edit_mode"   not in st.session_state: st.session_state.edit_mode   = False
 if "last_error"  not in st.session_state: st.session_state.last_error  = None
+if "audio_warning" not in st.session_state: st.session_state.audio_warning = None
 
 if "hydrated" not in st.session_state:
     st.session_state.hydrated = True
@@ -442,6 +467,18 @@ with st.sidebar:
         apply_turn(_resp, _err)
         st.rerun()
 
+    if st.button("↩ Undo last turn", use_container_width=True, key="undo_btn",
+                 help="Discard the last thing you said (e.g. it was misheard) and say it again."):
+        _resp, _err = api_call("POST", "/api/undo", timeout=15)
+        if _err:
+            st.session_state.last_error = _err
+        else:
+            st.session_state.last_error = None
+            st.session_state.audio_warning = None
+            st.session_state.contract = _resp["state"]
+            sync_transcript()
+        st.rerun()
+
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### 💬 Conversation")
     st.markdown('<hr style="border-color:#1e3a5f;margin:6px 0 12px;">', unsafe_allow_html=True)
@@ -503,6 +540,8 @@ missing  = set(contract.get("missing_mandatory_fields", []))
 
 if st.session_state.get("last_error"):
     st.error(st.session_state.last_error)
+if st.session_state.get("audio_warning"):
+    st.warning(st.session_state.audio_warning)
 
 # ── Top Banner ───────────────────────────────────────────────────────────────
 st.markdown(f"""

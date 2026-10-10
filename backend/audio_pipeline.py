@@ -54,6 +54,10 @@ TRIM_AFTER_BLOCKS = 7          # ...and 0.7 s after the last speech; drop the no
 #: Description of the input path used by the most recent recording (for diagnostics).
 last_input_description = ""
 
+#: Quality numbers of the most recent recording: capture path, length, whether speech was heard and an
+#: estimate of the signal-to-noise ratio in dB (None if no speech was detected).
+last_recording: dict[str, Any] | None = None
+
 
 @dataclass
 class _InputConfig:
@@ -136,7 +140,7 @@ def record_audio(
     When ``interactive`` is true, Enter starts recording and a second Enter
     stops it manually; VAD and the maximum duration remain safety fallbacks.
     """
-    global last_input_description
+    global last_input_description, last_recording
 
     if max_seconds <= 0:
         raise ValueError("max_seconds must be greater than zero")
@@ -271,6 +275,13 @@ def record_audio(
     if not captured:
         raise RuntimeError("No audio was captured from the microphone")
 
+    snr_db = None
+    noise_rms = float(np.percentile(levels, NOISE_PERCENTILE)) if levels else 0.0
+    speech_levels = [lv for lv in levels if lv >= threshold]
+    if speech_detected and speech_levels and noise_rms > 0:
+        speech_rms = float(np.sqrt(np.mean(np.square(speech_levels))))
+        snr_db = round(20.0 * math.log10(max(speech_rms, 1e-6) / max(noise_rms, 1.0)), 1)
+
     if speech_detected and first_speech_block >= 0:
         # Whisper-tiny hallucinates on long stretches of room noise: keep the speech plus a margin.
         start = max(0, first_speech_block - TRIM_BEFORE_BLOCKS)
@@ -278,6 +289,12 @@ def record_audio(
         captured = captured[start:end]
     audio = _normalise(_resample(np.concatenate(captured), chosen.sample_rate))
     pcm = np.clip(audio, -32768, 32767).astype("<i2")
+    last_recording = {
+        "capture": chosen.description,
+        "seconds": round(len(pcm) / SAMPLE_RATE, 1),
+        "speech_detected": bool(speech_detected),
+        "snr_db": snr_db,
+    }
 
     with wave.open(str(output), "wb") as wav_file:
         wav_file.setnchannels(CHANNELS)

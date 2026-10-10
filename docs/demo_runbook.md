@@ -108,6 +108,26 @@ Swap (then run `start_demo` again):
 - Whisper size matters on hard audio (offline PyTorch check on our recordings): tiny garbles room names and times;
   base usually recovers "conference room 2 ... around 10 a.m."; small is best. The board currently runs **tiny**.
 
+## How clear must the audio be? (measured on the board)
+
+Same sentence, our room's recorded noise mixed in at different levels. Word error rate; 0% is perfect.
+
+| Signal over noise | tiny (on the board) | base | small |
+|---|---|---|---|
+| 25-30 dB (speaking 20-30 cm from the mic) | 0% | 0% | 0% |
+| 20 dB | 0-6% | 0% | 0% |
+| 15 dB | ~11% | 6% | 0% |
+| 10 dB | ~17% | 11% | 0% |
+| 7 dB (a sentence played from the laptop's own speaker) | ~22% | 17% | 0% |
+| 4 dB | 39% (often unusable) | 56% | 17% |
+
+So: **speak to the microphone from 20-30 cm** (or play the sentence from a phone held close). A sentence played through the
+laptop's speaker lands around 5-7 dB, where the tiny model garbles it. After each spoken turn the UI warns when the
+recording was below ~12 dB; use **Undo last turn** (sidebar) to discard a misheard turn and say it again.
+Set Windows *Sound > Input > Microphone Array* volume to 100% for the best signal. A headset or USB microphone is better still.
+A vocabulary "hint" prompt for Whisper was tested and rejected: it changed the average error only from 11% to 9% and made the model
+invent text from silence.
+
 ## Known limits
 
 - Audio is capped at 15 s per recording; Whisper handles 30 s windows.

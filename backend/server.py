@@ -97,6 +97,10 @@ class SessionSubmitted(Exception):
     pass
 
 
+class NothingToUndo(Exception):
+    pass
+
+
 class NotReadyToSubmit(Exception):
     def __init__(self, missing: List[str]):
         super().__init__(f"Missing mandatory fields: {missing}")
@@ -112,6 +116,8 @@ class Orchestrator:
         self.path = Path(contract_path)
         self._lock = threading.RLock()
         self._transcript: List[Dict[str, str]] = []
+        # (state, transcript length) before each turn, so a misheard turn can be undone
+        self._history: List[Any] = []
         self._state = self._load()
 
     # -- persistence -------------------------------------------------------
@@ -181,7 +187,13 @@ class Orchestrator:
     def text_turn(self, text: str) -> Dict[str, Any]:
         with self._lock:
             self._ensure_open()
-            result = process_user_turn(text, self._state, _llm_engine)
+            self._history.append((copy.deepcopy(self._state), len(self._transcript)))
+            del self._history[:-10]
+            try:
+                result = process_user_turn(text, self._state, _llm_engine)
+            except Exception:
+                self._history.pop()
+                raise
             self._state = result
             self._log("user", text)
             speech = _speech_for(result)
@@ -219,8 +231,23 @@ class Orchestrator:
             self._persist()
             return self._response(None, None)
 
+    def undo(self) -> Dict[str, Any]:
+        """Discard the last turn (e.g. the speech recogniser misheard it) and restore the state before it."""
+        with self._lock:
+            self._ensure_open()
+            if not self._history:
+                raise NothingToUndo()
+            state, transcript_len = self._history.pop()
+            self._state = state
+            del self._transcript[transcript_len:]
+            speech = "Okay, I discarded that. Please say it again."
+            self._log("assistant", speech)
+            self._persist()
+            return self._response(None, speech)
+
     def reset(self) -> Dict[str, Any]:
         with self._lock:
+            self._history.clear()
             self._state = blank_state()
             self._transcript = []
             self._persist()
@@ -237,6 +264,16 @@ class TextTurnRequest(BaseModel):
 
 class SubmitRequest(BaseModel):
     fields: Optional[Dict[str, Optional[str]]] = None
+
+
+def _recording_info() -> Optional[Dict[str, Any]]:
+    """Quality numbers of the last microphone recording (None if unavailable)."""
+    try:
+        from backend import audio_pipeline
+        info = getattr(audio_pipeline, "last_recording", None)
+        return dict(info) if info else None
+    except Exception:
+        return None
 
 
 def create_app(contract_path: Optional[Path] = None) -> FastAPI:
@@ -311,7 +348,11 @@ def create_app(contract_path: Optional[Path] = None) -> FastAPI:
                     audio_path = runtime.record_audio()
                 except runtime.EngineUnavailable as exc:
                     raise HTTPException(501, f"{exc} Upload a file in multipart field 'file' instead.")
-            return finish(run_turn(orch.audio_turn, audio_path), background)
+                mic_info = _recording_info()
+            resp = finish(run_turn(orch.audio_turn, audio_path), background)
+            if file is None and mic_info:
+                resp["audio"] = mic_info  # signal-to-noise estimate, so the UI can warn about a poor recording
+            return resp
         finally:
             if tmp_path and os.path.exists(tmp_path):
                 os.unlink(tmp_path)
@@ -329,6 +370,15 @@ def create_app(contract_path: Optional[Path] = None) -> FastAPI:
             raise HTTPException(409, "Incident already submitted.")
         except NotReadyToSubmit as exc:
             raise HTTPException(409, f"Cannot submit; missing mandatory fields: {exc.missing}")
+
+    @app.post("/api/undo")
+    def undo(background: BackgroundTasks) -> Dict[str, Any]:
+        try:
+            return finish(orch.undo(), background)
+        except SessionSubmitted:
+            raise HTTPException(409, "Incident already submitted.")
+        except NothingToUndo:
+            raise HTTPException(409, "Nothing to undo.")
 
     @app.post("/api/reset")
     def reset() -> Dict[str, Any]:

@@ -43,6 +43,13 @@ def main() -> int:
     print(f"\nCapture path: {ap.last_input_description}")
     print(f"Listened for {took:.1f} s ({len(samples) / ap.SAMPLE_RATE:.1f} s of audio; the cap is 15 s).")
     print(f"Room noise ~{room:.0f}, speech threshold {threshold:.0f}, your loudest 0.1 s ~{loud:.0f}.")
+    info = ap.last_recording or {}
+    snr = info.get('snr_db')
+    if snr is not None:
+        verdict = ('excellent' if snr >= 25 else 'good' if snr >= 18 else 'marginal - expect some wrong words' if snr >= 10 else 'poor - recognition will often fail')
+        print(f"Signal-to-noise estimate: {snr:.0f} dB ({verdict}).  On the board, tiny Whisper is exact at 25+ dB and unreliable below ~10 dB.")
+    elif not info.get('speech_detected', True):
+        print('No clear speech was detected. Speak louder or closer to the microphone.')
     if took >= 14.5:
         print("-> It ran to the cap: it never heard a clear pause. Speak closer/louder, or reduce background noise.")
     if loud < threshold:

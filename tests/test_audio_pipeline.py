@@ -185,3 +185,21 @@ def test_pause_ends_recording_but_gaps_between_words_do_not(monkeypatch, tmp_pat
         assert seconds >= speech_seconds, (speech_rms, seconds)
         # ... and it stopped at the pause instead of running through the 4 s of silence that follows.
         assert seconds < speech_seconds + 0.5 + 1.2 + 1.0, (speech_rms, seconds)
+
+
+def test_recording_reports_a_signal_to_noise_estimate(monkeypatch, tmp_path):
+    plan, blk, _ = _sentence_stream(1500)            # speech RMS 1500 over room noise RMS 70
+    _record_plan(monkeypatch, tmp_path, plan, blk)
+    info = audio_pipeline.last_recording
+    assert info["speech_detected"] is True
+    assert 18 <= info["snr_db"] <= 32                # 20*log10(1500/70) ~ 26.6 dB
+
+
+def test_recording_without_speech_has_no_snr(monkeypatch, tmp_path):
+    def blk(rms):
+        return array("h", [int(((i * 7919) % 141) - 70) for i in range(audio_pipeline.BLOCK_SIZE)])
+
+    _record_plan(monkeypatch, tmp_path, [(70, 40)], blk)   # four seconds of room noise only
+    info = audio_pipeline.last_recording
+    assert info["speech_detected"] is False
+    assert info["snr_db"] is None

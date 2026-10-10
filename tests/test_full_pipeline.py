@@ -262,3 +262,31 @@ def test_health_endpoint(ctx):
     body = client.get("/api/health").json()
     assert body["ok"] is True
     assert body["engine"]["mode"] == "mock"
+
+
+def test_undo_restores_the_state_before_the_last_turn(ctx):
+    client, _ = ctx
+    before = client.post("/api/text/turn", json={"text": "A pipe burst in building 4"}).json()["state"]
+    client.post("/api/text/turn", json={"text": "It happened at 3 PM and we turned off the valve"})
+
+    r = client.post("/api/undo")
+    assert r.status_code == 200
+    state = r.json()["state"]
+    assert state["status"] == "collecting"
+    assert state["fields"] == before["fields"]                       # the misheard turn is gone
+    assert "Please say it again" in r.json()["assistant_speech"]
+    user_lines = [m["text"] for m in client.get("/api/transcript").json() if m["role"] == "user"]
+    assert user_lines == ["A pipe burst in building 4"]
+
+    assert client.post("/api/undo").status_code == 200                # back before the first turn
+    assert client.get("/api/state").json()["fields"]["incident_type"] is None
+    assert client.post("/api/undo").status_code == 409                # nothing left to undo
+
+
+def test_undo_is_rejected_after_submit_and_cleared_by_reset(ctx):
+    client, _ = ctx
+    client.post("/api/text/turn", json={"text": SLIDE3})
+    assert client.post("/api/submit", json={}).status_code == 200
+    assert client.post("/api/undo").status_code == 409
+    client.post("/api/reset")
+    assert client.post("/api/undo").status_code == 409
