@@ -62,6 +62,8 @@ public class BridgeServer extends NanoHTTPD {
         o.put("stt_on_npu", stt.onNpu());
         o.put("stt_warning", stt.warning() == null ? JSONObject.NULL : stt.warning());
         o.put("llm_ready", llm.isReady());
+        o.put("llm_on_npu", llm.onNpu());
+        o.put("llm_warning", llm.warning() == null ? JSONObject.NULL : llm.warning());
         o.put("stt", stt.status());
         o.put("llm", llm.status());
         return json(ready ? Response.Status.OK : Response.Status.SERVICE_UNAVAILABLE, o);

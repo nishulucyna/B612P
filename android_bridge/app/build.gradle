@@ -1,5 +1,6 @@
 plugins {
     id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
 }
 
 android {
@@ -55,6 +56,10 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
     lint {
         abortOnError false
     }
@@ -63,6 +68,11 @@ android {
 dependencies {
     // Loopback HTTP server. Build-time download only; nothing is fetched at runtime.
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
+
+    // LLM: GenieX (llama.cpp runtime, Hexagon NPU). Ships its own arm64 native libs, incl. libggml-htp-v75.so.
+    // The POM declares no dependencies, so Kotlin coroutines are added here.
+    implementation 'com.qualcomm.qti:geniex-android:0.3.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
 
     // Whisper decoder (TFLite on CPU), as in the qidk sample.
     implementation 'org.tensorflow:tensorflow-lite:2.14.0'

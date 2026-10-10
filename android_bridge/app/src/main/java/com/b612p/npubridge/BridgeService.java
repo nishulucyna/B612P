@@ -24,23 +24,34 @@ public class BridgeService extends Service {
     /** Operator-facing state: loading (amber), running on the NPU (green), problem or CPU fallback (red). */
     public static int state() {
         SttEngine s = stt;
-        if (s == null) {
+        LlmEngine l = llm;
+        if (s == null || l == null) {
             return STATE_LOADING;
         }
-        if (s.warning() != null) {
+        if (s.warning() != null || l.warning() != null) {
             return STATE_ALERT;
         }
-        return (s.isReady() && s.onNpu()) ? STATE_OK : STATE_LOADING;
+        return (s.isReady() && s.onNpu() && l.isReady() && l.onNpu()) ? STATE_OK : STATE_LOADING;
     }
 
     /** One-line banner text for the current state. */
     public static String banner() {
         SttEngine s = stt;
+        LlmEngine l = llm;
         switch (state()) {
             case STATE_ALERT:
-                return "NOT ON THE NPU - " + s.warning();
+                StringBuilder sb = new StringBuilder("PROBLEM - not fully on the NPU:");
+                if (s.warning() != null) {
+                    sb.append("
+STT: ").append(s.warning());
+                }
+                if (l.warning() != null) {
+                    sb.append("
+LLM: ").append(l.warning());
+                }
+                return sb.toString();
             case STATE_OK:
-                return "Whisper encoder running on the NPU (Hexagon DSP)";
+                return "STT encoder on the NPU (DSP); LLM loaded with the NPU requested - confirm in logcat";
             default:
                 return "Loading models...";
         }
@@ -63,15 +74,18 @@ public class BridgeService extends Service {
             // Dev switch, off by default: `am start -n com.b612p.npubridge/.MainActivity --ez allow_cpu_fallback true`
             boolean allowCpu = intent != null && intent.getBooleanExtra(EXTRA_ALLOW_CPU_FALLBACK, false);
             final WhisperEngine whisper = new WhisperEngine(this, allowCpu);
+            final GenieEngine genie = new GenieEngine(this);
             stt = whisper;
-            llm = new GenieEngine(models);
+            llm = genie;
             // Model loading takes a while; keep the HTTP server (and /health) responsive meanwhile.
+            // One thread, one model at a time, to keep peak memory down.
             new Thread(new Runnable() {
                 @Override
                 public void run() {
                     whisper.load();
+                    genie.load();
                 }
-            }, "whisper-load").start();
+            }, "model-load").start();
             BridgeServer s = new BridgeServer(stt, llm);
             try {
                 s.start(SOCKET_READ_TIMEOUT_MS, false);

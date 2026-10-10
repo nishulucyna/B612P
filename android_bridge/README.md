@@ -15,8 +15,12 @@ Host client: `backend/npu_runtime.py`. Smoke test: `tests/test_npu_bridge.py`.
 - Whisper STT is wired: encoder DLC (w8a16, SM8650 offline cache) on the Hexagon DSP through SNPE
   (`app/src/main/cpp`, adapted from qidk `NLPSolution3-AutomaticSpeechRecognition-Whisper`), decoder on
   TFLite CPU, greedy decoding. Models are packaged as APK assets.
-- Not done: `GenieEngine` (Llama on the NPU) is still a stub that reports not-ready (HTTP 503) until the
-  Genie bundle for SM8650 is available. It never returns fake output.
+- LLM is wired through GenieX (`GenieEngine.kt`, llama.cpp runtime, Hexagon NPU, 4-bit `q4_0` GGUF), loading a
+  local file; nothing is downloaded. The SDK ships `libggml-htp-v75.so`, so SM8650 is covered by this path (the
+  Qualcomm AI Hub Llama/Genie bundle path only ships v79/v81 libraries). Not validated by Qualcomm on SM8650.
+  With no `.gguf` present it reports not-ready (HTTP 503); it never returns fake output.
+- GenieX does not report which processor ran the model. We request the NPU and show decode speed; confirm with
+  `adb logcat | findstr /i "hexagon htp ggml-hex"`. Whisper's encoder check (above) is stricter.
 - Not yet compiled or run on a device (no Android SDK/NDK on the dev PC that wrote this).
   Expect to fix small build errors on the first Android Studio build.
 - Port notes: the sample's native code was patched to release JNI arrays (the original could lose the
@@ -40,10 +44,15 @@ The encoder is built for the Hexagon DSP only. If it cannot start there, the app
 1. `powershell -File scripts/copy_whisper_assets.ps1` copies the model assets, the V75 SNPE libraries and the
    SNPE headers into the project (all gitignored). Needs `npu_models/whisper/` and `qairt_sdk/2.47.0.260601`.
 2. Open `android_bridge/` in Android Studio (it creates the Gradle wrapper and installs the NDK/CMake).
-   NanoHTTPD and TensorFlow Lite are downloaded at build time only.
+   NanoHTTPD, TensorFlow Lite, Kotlin coroutines and GenieX (`com.qualcomm.qti:geniex-android:0.3.1`) are downloaded
+   at build time only. The app uses Kotlin 2.0.21 because GenieX is a Kotlin 2.0 library.
 3. Build and install: `adb install -r -t app/build/outputs/apk/debug/app-debug.apk`
 4. Per boot: `scripts/setup_hdk.bat` (or `.sh` / `.ps1`).
-5. Llama only: `adb push npu_models/llama /data/local/tmp/npu_models/` (Whisper needs no push; it is inside the APK).
+5. LLM: `adb push <model>.gguf /data/local/tmp/npu_models/llm/model.gguf` (any `*.gguf` in that folder works,
+   `model.gguf` wins if several). Whisper needs no push; it is inside the APK. Run `scripts/setup_hdk.*` after
+   pushing so the app can read the file.
 6. Open the app and keep the screen on. Then `python tests/test_npu_bridge.py`.
 
-The app opens a socket on 127.0.0.1 only and makes no outbound network calls.
+The app opens a socket on 127.0.0.1 only and makes no outbound network calls. GenieX can download models and
+its docs say it needs the INTERNET permission; we load the file by path and never call its pull API. Test the demo
+with the board's Wi-Fi off.

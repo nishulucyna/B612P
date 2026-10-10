@@ -55,3 +55,4 @@ qidk/
 *.qik
 /qairt_sdk/
 /whisper_build/
+*.gguf

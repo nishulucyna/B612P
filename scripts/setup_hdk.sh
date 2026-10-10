@@ -26,6 +26,7 @@ adb root
 adb wait-for-device
 adb remount
 adb shell setenforce 0
+adb shell "chmod -R a+rX /data/local/tmp/npu_models 2>/dev/null || true"
 echo "SELinux: $(adb shell getenforce | tr -d '\r')"
 
 adb forward "tcp:${PORT}" "tcp:${PORT}"
