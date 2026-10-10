@@ -1,0 +1,8 @@
+# Binary documents and images must never get line-ending conversion (it corrupts them on Windows).
+*.pdf  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.pptx binary
+*.zip  binary
