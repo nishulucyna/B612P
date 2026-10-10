@@ -255,7 +255,8 @@ Java_com_b612p_npubridge_WhisperNative_loadModelJNI(JNIEnv *env, jobject thiz,
         return env->NewStringUTF(return_msg.c_str());
     }
 
-    for ( int index = 0; index <576000; index++ ) {
+    const int hiddenFloats = env->GetArrayLength(encoder_hidden_state);       // 1500 x model width
+    for ( int index = 0; index < hiddenFloats; index++ ) {
         logit_array[index] = outputVec[0][index];
         //LOGI("ASRHelper native-lib_prepost_logit: %d -> %f",index,logit_array[index]);
     }
@@ -268,7 +269,7 @@ Java_com_b612p_npubridge_WhisperNative_loadModelJNI(JNIEnv *env, jobject thiz,
 extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_b612p_npubridge_WhisperNative_InitSnpe(JNIEnv *env, jobject thiz,
-                                                                      jobject assets, jstring native_dir_path) {
+                                                                      jobject assets, jstring native_dir_path, jstring dlc_file) {
     // TODO: implement InitSnpe()
     std::string result;
     AAssetManager* mgr = AAssetManager_fromJava(env, assets);
@@ -283,6 +284,25 @@ Java_com_b612p_npubridge_WhisperNative_InitSnpe(JNIEnv *env, jobject thiz,
         __android_log_print(ANDROID_LOG_INFO, "SNPE ", "Failed to set ADSP Library Path");
     }
 
+
+    // An encoder DLC pushed to the device (any Whisper size) wins over the tiny one packaged in the APK.
+    const char *dlcFile = dlc_file ? env->GetStringUTFChars(dlc_file, nullptr) : nullptr;
+    std::string dlcFilePath = dlcFile ? dlcFile : "";
+    if (dlcFile) env->ReleaseStringUTFChars(dlc_file, dlcFile);
+    if (!dlcFilePath.empty()) {
+        FILE *f = fopen(dlcFilePath.c_str(), "rb");
+        if (!f) return env->NewStringUTF(("ERROR: cannot read encoder DLC " + dlcFilePath).c_str());
+        fseek(f, 0, SEEK_END);
+        long size = ftell(f);
+        fseek(f, 0, SEEK_SET);
+        std::vector<uint8_t> buf((size_t) size);
+        size_t got = fread(buf.data(), 1, buf.size(), f);
+        fclose(f);
+        if (got != buf.size()) return env->NewStringUTF(("ERROR: short read of " + dlcFilePath).c_str());
+        LOGI("ASRHelper: encoder DLC from file %s (%ld MB)", dlcFilePath.c_str(), size / (1024 * 1024));
+        result += build_network(buf.data(), buf.size());
+        return env->NewStringUTF(result.c_str());
+    }
 
     AAsset* asset = AAssetManager_open(mgr, "whisper_tiny_encoder_w8a16.dlc", AASSET_MODE_UNKNOWN);
 

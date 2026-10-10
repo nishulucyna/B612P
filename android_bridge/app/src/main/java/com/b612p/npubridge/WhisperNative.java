@@ -20,7 +20,7 @@ final class WhisperNative {
     native void setAllowCpuFallback(boolean allow);
 
     /** Builds the SNPE network from the DLC asset. "" = on the DSP, "WARN: ..." = CPU fallback, "ERROR: ..." = failed. */
-    native String InitSnpe(AssetManager assets, String nativeLibraryDir);
+    native String InitSnpe(AssetManager assets, String nativeLibraryDir, String encoderDlcFile);
 
     /** Loads mel filters and vocabulary from filters_vocab_gen.bin. Returns "Successfull" on success. */
     native String LoadVocab(AssetManager assets);

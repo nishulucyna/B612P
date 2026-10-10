@@ -11,7 +11,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inc/hpp)
 
 # Whisper encoder (SNPE, Hexagon DSP/HTP) + mel preprocessing + token decoding.
 # Adapted from qidk NLPSolution3-AutomaticSpeechRecognition-Whisper.
-add_library(ASR SHARED native-lib_pre_post.cpp inference.cpp inference_helper.cpp)
+add_library(ASR SHARED native-lib_pre_post.cpp inference.cpp inference_helper.cpp decoder.cpp)
 
 find_library(log-lib log)
 find_library(android-lib android)
