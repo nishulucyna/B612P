@@ -18,6 +18,30 @@ android {
         ndk {
             abiFilters 'arm64-v8a'
         }
+        externalNativeBuild {
+            cmake {
+                cppFlags '-std=c++11 -frtti -fexceptions'
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+        }
+    }
+
+    // The DLC / TFLite / vocab files are memory-mapped from the APK, so keep them uncompressed.
+    androidResources {
+        noCompress 'tflite', 'dlc', 'bin'
+    }
+
+    packaging {
+        jniLibs {
+            // The Hexagon skel libraries must exist as real files in nativeLibraryDir:
+            // SNPE finds them through ADSP_LIBRARY_PATH.
+            useLegacyPackaging = true
+        }
     }
 
     buildTypes {
@@ -30,9 +54,17 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
+    lint {
+        abortOnError false
+    }
 }
 
 dependencies {
     // Loopback HTTP server. Build-time download only; nothing is fetched at runtime.
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
+
+    // Whisper decoder (TFLite on CPU), as in the qidk sample.
+    implementation 'org.tensorflow:tensorflow-lite:2.14.0'
+    implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0'
 }

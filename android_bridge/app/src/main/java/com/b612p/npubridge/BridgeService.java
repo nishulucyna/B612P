@@ -29,8 +29,16 @@ public class BridgeService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (server == null) {
             ModelLoader models = new ModelLoader();
-            stt = new WhisperEngine(models);
+            final WhisperEngine whisper = new WhisperEngine(this);
+            stt = whisper;
             llm = new GenieEngine(models);
+            // Model loading takes a while; keep the HTTP server (and /health) responsive meanwhile.
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    whisper.load();
+                }
+            }, "whisper-load").start();
             BridgeServer s = new BridgeServer(stt, llm);
             try {
                 s.start(SOCKET_READ_TIMEOUT_MS, false);
