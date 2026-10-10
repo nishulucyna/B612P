@@ -46,3 +46,12 @@ recordings/
 
 # Cloned SDKs / External Repos
 qidk/
+
+# Large model files and staging folders (never commit)
+/dog/
+/npu_models/
+*.dlc
+*.bin
+*.qik
+/qairt_sdk/
+/whisper_build/
