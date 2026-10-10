@@ -8,10 +8,11 @@ host port 8080 to the device, so everything here talks to localhost only.
 
 Bridge protocol (what the Android service must implement):
   POST /stt   body: raw WAV bytes (Content-Type: audio/wav)
-              reply: JSON {"text": "..."} or plain-text transcript
+              reply: JSON {"transcript": "..."}
   POST /llm   body: JSON {"prompt": "..."}
-              reply: JSON {"text": "..."} or plain-text completion
-  GET  /health  reply: 200 when the models are loaded
+              reply: text/plain, the raw model output (expected to be JSON)
+  GET  /health  reply: 200 when both models are loaded, else 503 with details
+(The client also accepts {"text": ...} or plain text from either endpoint.)
 
 Public API, called by backend/agent_brain.py:
   run_stt(audio_path: str) -> str
@@ -23,7 +24,7 @@ import os
 import urllib.error
 import urllib.request
 
-BASE_URL = os.environ.get("NPU_BRIDGE_URL", "http://localhost:8080")
+BASE_URL = os.environ.get("NPU_BRIDGE_URL", "http://127.0.0.1:8080")
 STT_TIMEOUT_S = float(os.environ.get("NPU_STT_TIMEOUT", "60"))
 LLM_TIMEOUT_S = float(os.environ.get("NPU_LLM_TIMEOUT", "120"))
 

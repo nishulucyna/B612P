@@ -1,0 +1,38 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.b612p.npubridge'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.b612p.npubridge'
+        minSdk 29
+        // Kept at 33 so the app can read /data/local/tmp/npu_models on the dev board
+        // (SELinux is permissive after scripts/setup_hdk.sh).
+        targetSdk 33
+        versionCode 1
+        versionName '0.1'
+
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // Loopback HTTP server. Build-time download only; nothing is fetched at runtime.
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
+}
