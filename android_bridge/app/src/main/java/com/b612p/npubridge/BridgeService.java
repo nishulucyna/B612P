@@ -15,6 +15,37 @@ public class BridgeService extends Service {
     private static volatile SttEngine stt;
     private static volatile LlmEngine llm;
 
+    public static final String EXTRA_ALLOW_CPU_FALLBACK = "allow_cpu_fallback";
+
+    public static final int STATE_LOADING = 0;
+    public static final int STATE_OK = 1;
+    public static final int STATE_ALERT = 2;
+
+    /** Operator-facing state: loading (amber), running on the NPU (green), problem or CPU fallback (red). */
+    public static int state() {
+        SttEngine s = stt;
+        if (s == null) {
+            return STATE_LOADING;
+        }
+        if (s.warning() != null) {
+            return STATE_ALERT;
+        }
+        return (s.isReady() && s.onNpu()) ? STATE_OK : STATE_LOADING;
+    }
+
+    /** One-line banner text for the current state. */
+    public static String banner() {
+        SttEngine s = stt;
+        switch (state()) {
+            case STATE_ALERT:
+                return "NOT ON THE NPU - " + s.warning();
+            case STATE_OK:
+                return "Whisper encoder running on the NPU (Hexagon DSP)";
+            default:
+                return "Loading models...";
+        }
+    }
+
     /** Status text for the on-screen view. */
     public static String statusLine() {
         if (server == null) {
@@ -29,7 +60,9 @@ public class BridgeService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (server == null) {
             ModelLoader models = new ModelLoader();
-            final WhisperEngine whisper = new WhisperEngine(this);
+            // Dev switch, off by default: `am start -n com.b612p.npubridge/.MainActivity --ez allow_cpu_fallback true`
+            boolean allowCpu = intent != null && intent.getBooleanExtra(EXTRA_ALLOW_CPU_FALLBACK, false);
+            final WhisperEngine whisper = new WhisperEngine(this, allowCpu);
             stt = whisper;
             llm = new GenieEngine(models);
             // Model loading takes a while; keep the HTTP server (and /health) responsive meanwhile.

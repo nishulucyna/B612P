@@ -12,7 +12,14 @@ final class WhisperNative {
         System.loadLibrary("ASR");
     }
 
-    /** Builds the SNPE network from the DLC asset. Returns "" on success, else an error text. */
+    /**
+     * Dev switch, default false. When false the encoder must build on the DSP/HTP and InitSnpe
+     * returns "ERROR: ..." if it cannot. When true it may build on the CPU and InitSnpe returns
+     * "WARN: CPU FALLBACK ...".
+     */
+    native void setAllowCpuFallback(boolean allow);
+
+    /** Builds the SNPE network from the DLC asset. "" = on the DSP, "WARN: ..." = CPU fallback, "ERROR: ..." = failed. */
     native String InitSnpe(AssetManager assets, String nativeLibraryDir);
 
     /** Loads mel filters and vocabulary from filters_vocab_gen.bin. Returns "Successfull" on success. */

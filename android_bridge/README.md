@@ -23,6 +23,18 @@ Host client: `backend/npu_runtime.py`. Smoke test: `tests/test_npu_bridge.py`.
   encoder output), keep the SNPE object after a failed run, and guard missing assets. Audio longer than
   30 s is truncated (Whisper chunk size).
 
+## NPU alerts (no silent CPU fallback)
+
+The encoder is built for the Hexagon DSP only. If it cannot start there, the app does not quietly use the CPU:
+
+- `/stt` answers 503, `/health` reports `stt_ready: false` with `stt_warning`, and logcat prints `NPU_ALERT`
+  (`adb logcat | findstr NPU_ALERT`).
+- The app shows a red banner and a Toast. The banner is amber while loading and green once the encoder is on the NPU.
+- Dev only: `adb shell am start -n com.b612p.npubridge/.MainActivity --ez allow_cpu_fallback true` lets the encoder
+  build on the CPU so the rest of the pipeline can be tried. `/health` then reports `stt_on_npu: false`, the banner
+  stays red, and the host client logs "NPU ALERT" once. Never use this for the demo.
+- Host: `backend.npu_runtime.npu_status()` returns the `/health` JSON for the UI.
+
 ## Build and run
 
 1. `powershell -File scripts/copy_whisper_assets.ps1` copies the model assets, the V75 SNPE libraries and the

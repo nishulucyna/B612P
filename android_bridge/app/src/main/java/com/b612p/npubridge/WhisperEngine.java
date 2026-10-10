@@ -41,10 +41,15 @@ public class WhisperEngine implements SttEngine {
     private WhisperNative nativeLib;
     private Interpreter decoder;
     private volatile boolean ready = false;
+    private volatile boolean onNpu = false;
+    private volatile String warning = null;
     private volatile String status = "whisper: not loaded yet";
+    private final boolean allowCpuFallback;
 
-    public WhisperEngine(Context context) {
+    /** @param allowCpuFallback dev-only; when false the engine refuses to run unless the encoder is on the DSP */
+    public WhisperEngine(Context context, boolean allowCpuFallback) {
         this.context = context.getApplicationContext();
+        this.allowCpuFallback = allowCpuFallback;
     }
 
     /** Loads the encoder, vocabulary and decoder. Slow; call off the main thread. */
@@ -52,10 +57,17 @@ public class WhisperEngine implements SttEngine {
         status = "whisper: loading...";
         try {
             nativeLib = new WhisperNative();
+            nativeLib.setAllowCpuFallback(allowCpuFallback);
 
             String init = nativeLib.InitSnpe(context.getAssets(), context.getApplicationInfo().nativeLibraryDir);
-            if (init == null || !init.isEmpty()) {
-                throw new IllegalStateException("encoder not built: " + init);
+            boolean cpuFallback = false;
+            if (init == null || init.startsWith("ERROR") || (!init.isEmpty() && !init.startsWith("WARN"))) {
+                throw new IllegalStateException(init == null ? "encoder not built" : init);
+            }
+            if (init.startsWith("WARN")) {
+                cpuFallback = true;
+                warning = init;
+                Log.e(TAG, "NPU_ALERT: " + init);
             }
             String vocab = nativeLib.LoadVocab(context.getAssets());
             if (vocab == null || !vocab.startsWith("Success")) {
@@ -68,13 +80,18 @@ public class WhisperEngine implements SttEngine {
             decoder.resizeInput(0, new int[]{1, HIDDEN_FRAMES, HIDDEN_DIM});
             decoder.resizeInput(1, new int[]{1, PROMPT.length});
 
+            onNpu = !cpuFallback;
             ready = true;
-            status = "whisper: ready (encoder on DSP via SNPE, decoder on TFLite CPU)";
+            status = cpuFallback
+                    ? "whisper: READY BUT ON CPU, NOT THE NPU (fallback allowed)"
+                    : "whisper: ready (encoder on DSP via SNPE, decoder on TFLite CPU)";
             Log.i(TAG, status);
         } catch (Throwable t) {
             ready = false;
-            status = "whisper: load failed: " + t;
-            Log.e(TAG, status, t);
+            onNpu = false;
+            warning = String.valueOf(t.getMessage() != null ? t.getMessage() : t);
+            status = "whisper: load failed: " + warning;
+            Log.e(TAG, "NPU_ALERT: " + status, t);
         }
     }
 
@@ -86,6 +103,16 @@ public class WhisperEngine implements SttEngine {
     @Override
     public String status() {
         return status;
+    }
+
+    @Override
+    public boolean onNpu() {
+        return onNpu;
+    }
+
+    @Override
+    public String warning() {
+        return warning;
     }
 
     @Override

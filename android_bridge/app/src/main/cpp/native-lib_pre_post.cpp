@@ -305,6 +305,11 @@ Java_com_b612p_npubridge_WhisperNative_InitSnpe(JNIEnv *env, jobject thiz,
     return env->NewStringUTF(result.c_str());
 }
 extern "C"
+JNIEXPORT void JNICALL
+Java_com_b612p_npubridge_WhisperNative_setAllowCpuFallback(JNIEnv *env, jobject thiz, jboolean allow) {
+    g_allow_cpu_fallback = (allow == JNI_TRUE);
+}
+extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_b612p_npubridge_WhisperNative_LoadVocab(JNIEnv *env, jobject thiz,
                                                                        jobject assets) {

@@ -56,6 +56,7 @@ bool saveOutput (zdl::DlSystem::UserBufferMap& outputMap,
 				 
 std::string build_network(const uint8_t * dlc_buffer, const size_t dlc_size);
 bool SetAdspLibraryPath(std::string nativeLibPath);
+extern bool g_allow_cpu_fallback;
 std::string execute_net(std::vector<float *> inputVec, int arrayLength,
                         std::vector<float *> & outputVec, std::string runtime);
 #endif //NATIVEINFERENCE_INFERENCE_H
