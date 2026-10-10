@@ -169,5 +169,5 @@ std::string execute_net(std::vector<float *> inputVec, int arrayLength,
 
     } else return "\nSNPE Execute Failed\n";
 //
-//    return "";
+    return "";
 }

@@ -72,7 +72,7 @@ public class BridgeService extends Service {
             // Dev switch, off by default: `am start -n com.b612p.npubridge/.MainActivity --ez allow_cpu_fallback true`
             boolean allowCpu = intent != null && intent.getBooleanExtra(EXTRA_ALLOW_CPU_FALLBACK, false);
             final WhisperEngine whisper = new WhisperEngine(this, allowCpu);
-            final GenieEngine genie = new GenieEngine(this);
+            final GenieEngine genie = new GenieEngine(this, allowCpu);
             stt = whisper;
             llm = genie;
             // Model loading takes a while; keep the HTTP server (and /health) responsive meanwhile.

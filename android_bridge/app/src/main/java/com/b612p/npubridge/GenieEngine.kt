@@ -22,15 +22,20 @@ import java.util.concurrent.TimeUnit
  * LLM on the Hexagon NPU through GenieX (llama.cpp runtime, Q4_0 GGUF).
  *
  * The model is a local .gguf pushed with adb, e.g.
- *   adb push gemma-4-E4B_q4_0-it.gguf /data/local/tmp/npu_models/llm/model.gguf
+ *   adb push model.gguf /data/local/tmp/npu_models/llm/model.gguf
  * (any *.gguf in that folder works; model.gguf is preferred if several are present).
  * Nothing is downloaded: the model is opened by path.
  *
- * Honesty note: GenieX does not report which processor ran the model. We request the NPU and
- * surface decode speed; confirm NPU use with logcat (hexagon / htp / ggml-hex lines).
+ * GenieX has no API that says which processor ran the model, and asking for the NPU does not
+ * guarantee it: the runtime silently keeps weights it cannot place on the Hexagon device in CPU
+ * buffers. So after loading we read GenieX's own placement log (this process, via logcat) and
+ * only report onNpu when the weights really went to HTP0. By default a model that mostly stays
+ * on the CPU is refused (not ready). [allowCpuFallback] is a dev-only switch that still serves
+ * it, flagged.
  */
 class GenieEngine @JvmOverloads constructor(
     private val context: Context,
+    private val allowCpuFallback: Boolean = false,
     private val modelDir: File = File(ModelLoader.DEFAULT_ROOT, "llm"),
 ) : LlmEngine {
 
@@ -40,7 +45,7 @@ class GenieEngine @JvmOverloads constructor(
     @Volatile private var warning: String? = null
     @Volatile private var status = "llm: not loaded yet"
 
-    /** Loads the SDK and the model, then runs a short warm-up. Slow; call off the main thread. */
+    /** Loads the SDK and the model, checks where it was placed, then runs a short warm-up. Slow; call off the main thread. */
     fun load() {
         status = "llm: loading..."
         try {
@@ -60,15 +65,26 @@ class GenieEngine @JvmOverloads constructor(
             val wrapper = runBlocking { LlmWrapper.builder().llmCreateInput(input).build() }.getOrThrow()
             llm = wrapper
 
+            // Where did the runtime actually put the weights?
+            val verdict = judge(readPlacement())
+
             // Warm-up doubles as a smoke test and gives a decode speed to show the operator.
             val warm = complete(wrapper, "Reply with the single word OK.", 8)
-            val speed = warm.second?.decodingSpeed
-            onNpu = true // NPU was requested and the model loaded; see the honesty note above
-            ready = true
-            status = "llm: ready, NPU requested (llama.cpp, ${gguf.name}); warm-up decode " +
-                (speed?.let { String.format("%.1f tok/s", it) } ?: "n/a") +
-                " - confirm NPU use in logcat"
-            Log.i(TAG, status)
+            val speedText = warm.second?.decodingSpeed?.let { String.format("%.1f tok/s", it) } ?: "n/a"
+
+            onNpu = verdict.onNpu
+            warning = verdict.problem
+            ready = verdict.onNpu || allowCpuFallback
+            status = when {
+                verdict.onNpu -> "llm: ready on the NPU (${gguf.name}; ${verdict.detail}); warm-up decode $speedText"
+                allowCpuFallback -> "llm: READY BUT NOT ON THE NPU (${gguf.name}; ${verdict.detail}); decode $speedText"
+                else -> "llm: refused, not on the NPU (${gguf.name}; ${verdict.detail})"
+            }
+            if (verdict.problem != null) {
+                Log.e(TAG, "NPU_ALERT: $status")
+            } else {
+                Log.i(TAG, status)
+            }
         } catch (t: Throwable) {
             ready = false
             onNpu = false
@@ -91,15 +107,29 @@ class GenieEngine @JvmOverloads constructor(
         if (!ready || model == null) {
             throw IllegalStateException(status)
         }
-        val (text, profile) = complete(model, prompt, MAX_NEW_TOKENS)
+        val isIncidentExtraction = IncidentJson.isExtractionPrompt(prompt)
+        val (text, profile) = complete(
+            model,
+            prompt,
+            MAX_NEW_TOKENS,
+            if (isIncidentExtraction) IncidentJson.GRAMMAR else null,
+        )
         if (profile != null) {
-            Log.i(TAG, "LLM: ${profile.generatedTokens} tokens, decode %.1f tok/s, prefill %.1f tok/s"
-                .format(profile.decodingSpeed, profile.prefillSpeed))
+            Log.i(
+                TAG,
+                "LLM: ${profile.generatedTokens} tokens, decode %.1f tok/s, prefill %.1f tok/s"
+                    .format(profile.decodingSpeed, profile.prefillSpeed),
+            )
         }
-        return text
+        return if (isIncidentExtraction) IncidentJson.nullPlaceholders(text) else text
     }
 
-    private fun complete(model: LlmWrapper, prompt: String, maxTokens: Int): Pair<String, ProfilingData?> =
+    private fun complete(
+        model: LlmWrapper,
+        prompt: String,
+        maxTokens: Int,
+        grammar: String? = null,
+    ): Pair<String, ProfilingData?> =
         runBlocking {
             val templated = model
                 .applyChatTemplate(arrayOf(ChatMessage("user", prompt)), null, false)
@@ -108,11 +138,14 @@ class GenieEngine @JvmOverloads constructor(
             val out = StringBuilder()
             var profile: ProfilingData? = null
             var failure: Throwable? = null
-            // Greedy decoding: extraction should be repeatable.
-            val config = GenerationConfig(
-                maxTokens = maxTokens,
-                samplerConfig = SamplerConfig(temperature = 0f),
-            )
+            // Greedy decoding: extraction should be repeatable. For the incident-extraction prompt the
+            // output is constrained to exactly the 10 form fields (string or null), so a small model
+            // cannot ramble, think aloud, or invent extra keys.
+            val sampler = SamplerConfig(temperature = 0f)
+            if (grammar != null) {
+                sampler.grammarString = grammar
+            }
+            val config = GenerationConfig(maxTokens = maxTokens, samplerConfig = sampler)
             model.generateStreamFlow(templated.formattedText, config).collect { r ->
                 when (r) {
                     is LlmStreamResult.Token -> out.append(r.text)
@@ -123,6 +156,63 @@ class GenieEngine @JvmOverloads constructor(
             failure?.let { throw it }
             Pair(out.toString().trim(), profile)
         }
+
+    private class Placement(val usesHtpDevice: Boolean, val htpMiB: Double, val cpuMiB: Double)
+
+    private class Verdict(val onNpu: Boolean, val problem: String?, val detail: String)
+
+    /**
+     * Parses GenieX's own load log (this process only) for where the model weights were placed:
+     *   "load_tensors:  HTP0-REPACK model buffer size =   758.25 MiB"
+     *   "load_tensors:          CPU model buffer size =   243.43 MiB"
+     * The embedding tables stay on the CPU in every llama.cpp setup; the quantized transformer
+     * matrices are what should be in the HTP0 buffers.
+     */
+    private fun readPlacement(): Placement? {
+        return try {
+            val pid = android.os.Process.myPid()
+            val proc = Runtime.getRuntime().exec(
+                arrayOf("logcat", "-d", "--pid=$pid", "-v", "raw", "-s", "GenieXSdk:V"),
+            )
+            val text = proc.inputStream.bufferedReader().readText()
+            proc.waitFor()
+
+            val usesHtp = Regex("""Using \d+ device\(s\): HTP""").containsMatchIn(text) ||
+                Regex("""using device HTP""").containsMatchIn(text)
+            var htp = 0.0
+            var cpu = 0.0
+            Regex("""(\S+) model buffer size =\s+([\d.]+) MiB""").findAll(text).forEach { m ->
+                val name = m.groupValues[1]
+                val mib = m.groupValues[2].toDouble()
+                if (name.startsWith("HTP")) htp += mib else if (name.startsWith("CPU")) cpu += mib
+            }
+            Log.i(TAG, "LLM placement: HTP device=$usesHtp, weights HTP=%.0f MiB, CPU=%.0f MiB".format(htp, cpu))
+            Placement(usesHtp, htp, cpu)
+        } catch (t: Throwable) {
+            Log.w(TAG, "could not read GenieX placement log: $t")
+            null
+        }
+    }
+
+    private fun judge(p: Placement?): Verdict {
+        if (p == null) {
+            return Verdict(false, "cannot verify NPU use (placement log unreadable)", "placement unverified")
+        }
+        if (!p.usesHtpDevice) {
+            return Verdict(false, "GenieX did not select the Hexagon (HTP) device", "no HTP device")
+        }
+        val total = p.htpMiB + p.cpuMiB
+        val detail = String.format("weights: %.0f MiB on HTP0, %.0f MiB on CPU", p.htpMiB, p.cpuMiB)
+        if (total <= 0.0 || p.htpMiB * 100.0 < total * MIN_HTP_WEIGHT_PERCENT) {
+            return Verdict(
+                false,
+                "most of this model's weights are not on the Hexagon device ($detail). " +
+                    "Use a model the HTP backend supports (e.g. a plain Llama or Qwen Q4_0).",
+                detail,
+            )
+        }
+        return Verdict(true, null, detail)
+    }
 
     private fun initSdk() {
         val latch = CountDownLatch(1)
@@ -156,5 +246,7 @@ class GenieEngine @JvmOverloads constructor(
         private const val TAG = "NpuBridge"
         private const val N_CTX = 2048       // prompt (~600 tokens) + JSON answer fit comfortably
         private const val MAX_NEW_TOKENS = 512
+        private const val MIN_HTP_WEIGHT_PERCENT = 30
+
     }
 }

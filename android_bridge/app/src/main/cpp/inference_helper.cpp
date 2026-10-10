@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 //============================================================================
 
+#include <cstring>
+#include <algorithm>
 #include <jni.h>
 #include <string>
 #include <iostream>
@@ -451,7 +453,12 @@ bool saveOutput (zdl::DlSystem::UserBufferMap& outputMap,
 //                           applicationOutputBuffers.at(name).size() / elementSize, bitWidth);
             } else {
                 LOGI("Saving output for %s", name);
-                outputVec[index] = (float *) applicationOutputBuffers.at(name).data();
+                // The caller supplied the destination in outputVec[index] (the Java array). Copy into it:
+                // the source lives in a local map of execute_net and is freed when that returns, so
+                // pointing outputVec at it (as the original sample did) left a dangling pointer.
+                const std::vector<float_t> &src = applicationOutputBuffers.at(name);
+                if (outputVec[index] == nullptr) return false;
+                std::memcpy(outputVec[index], src.data(), std::min(src.size(), (size_t) 576000) * sizeof(float));
                 for ( int s = 0; s < 3; s++ )
                     LOGI("out[%d][%d] = %f ", index, s, outputVec[index][s]);
                 index++;

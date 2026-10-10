@@ -18,11 +18,26 @@ Host client: `backend/npu_runtime.py`. Smoke test: `tests/test_npu_bridge.py`.
 - LLM is wired through GenieX (`GenieEngine.kt`, llama.cpp runtime, Hexagon NPU, 4-bit `q4_0` GGUF), loading a
   local file; nothing is downloaded. The SDK ships `libggml-htp-v75.so`, so SM8650 is covered by this path (the
   Qualcomm AI Hub Llama/Genie bundle path only ships v79/v81 libraries). Not validated by Qualcomm on SM8650.
-  With no `.gguf` present it reports not-ready (HTTP 503); it never returns fake output.
-- GenieX does not report which processor ran the model. We request the NPU and show decode speed; confirm with
-  `adb logcat | findstr /i "hexagon htp ggml-hex"`. Whisper's encoder check (above) is stricter.
-- Not yet compiled or run on a device (no Android SDK/NDK on the dev PC that wrote this).
-  Expect to fix small build errors on the first Android Studio build.
+- Where the model runs is checked, not assumed: after loading, the engine reads GenieX's own placement log
+  (`... HTP0-REPACK model buffer size = N MiB`) and only reports `llm_on_npu` when at least 30% of the weight bytes
+  are in HTP0 buffers (embedding tables stay on the CPU in every llama.cpp setup). Otherwise the LLM is refused
+  (HTTP 503) unless the dev switch is used. High CPU use is NOT a signal: llama.cpp threads spin while waiting.
+- Incident-extraction prompts are decoded with a GBNF grammar (exactly the 10 fields, string or null) and
+  placeholder strings such as "Unknown" are turned into null (`IncidentJson.kt`), because the brain treats any
+  non-empty string as a filled field.
+- Measured on the HDK8650 (SM8650, Android 14), `scripts/bench_board_llm.py`:
+
+  | Model | Weights on HTP0 | Decode | LLM call (extraction) | Four test cases |
+  |---|---|---|---|---|
+  | Qwen3-1.7B Q4_0 (1.1 GB) | 759 MiB | ~29 tok/s | ~4.6 s | all correct, follow-up turn merges |
+  | Gemma 4 E4B Q4_0 (5.2 GB) | 2171 MiB (+3255 MiB embeddings on CPU) | ~12 tok/s | ~12.4 s | all correct |
+  | Qwen3-1.7B without the grammar | same | same | up to 18.8 s | follow-up turn failed ("Unknown") |
+
+  Qwen3-1.7B with the grammar is the default recommendation. Put the chosen file at
+  `/data/local/tmp/npu_models/llm/model.gguf`.
+- Builds with `gradlew assembleDebug` (AGP 8.6.1, Kotlin 2.0.21, NDK 26.2.11394342, CMake 3.22.1) and runs on the
+  HDK8650: Whisper on the DSP (encoder ~14 ms), LLM on the NPU, end to end through the orchestrator in
+  `NPU_BACKEND=device` mode.
 - Port notes: the sample's native code was patched to release JNI arrays (the original could lose the
   encoder output), keep the SNPE object after a failed run, and guard missing assets. Audio longer than
   30 s is truncated (Whisper chunk size).
