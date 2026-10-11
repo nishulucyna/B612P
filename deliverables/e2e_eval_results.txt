@@ -1,0 +1,67 @@
+board: {'ready': True, 'stt_ready': True, 'stt_on_npu': True, 'stt_warning': None, 'llm_ready': True, 'llm_on_npu': True, 'llm_warning': None, 'stt': 'whisper-small: ready (encoder on DSP via SNPE, decoder on DSP via SNPE)', 'llm': 'llm: ready on the NPU (model.gguf; weights: 2171 MiB on HTP0, 3255 MiB on CPU); warm-up decode 12.5 tok/s'}
+
+== typed narration -> LLM
+  case 1: 5/5 fields right, 0 invented, gate ok  (13s)
+  case 2: 4/5 fields right, 0 invented, gate ok  (13s)
+      - incident_type: got 'equipment damage'
+  case 3: 5/5 fields right, 0 invented, gate ok  (14s)
+  case 4: 7/7 fields right, 0 invented, gate ok  (13s)
+  case 5: 5/5 fields right, 0 invented, gate ok  (15s)
+  case 6: 4/4 fields right, 0 invented, gate ok  (15s)
+  case 7: 6/6 fields right, 0 invented, gate ok  (12s)
+  case 8: 5/5 fields right, 0 invented, gate ok  (12s)
+  case 9: 4/4 fields right, 0 invented, gate ok  (14s)
+  case 10: 2/2 fields right, 1 invented, gate ok  (14s)
+      - severity_level: should be empty, got 'High'
+  TOTAL: 47/48 fields correctly mapped (98%), 1 invented values, 10/10 gate decisions right
+
+== spoken narration (clean) -> Whisper -> LLM
+  case 1: 5/5 fields right, 0 invented, gate ok  (23s)
+  case 2: 4/5 fields right, 0 invented, gate ok  (21s)
+      heard: Hey, I need to report that a forklift hit a rack in warehouse 2 yesterday afternoon. Nobody got hurt but the rack collapsed. We cordoned off the area.
+      - incident_type: got 'equipment damage'
+  case 3: 5/5 fields right, 0 invented, gate ok  (18s)
+  case 4: 5/7 fields right, 0 invented, gate ok  (23s)
+      heard: Rovey slipped on a wet floor near the cafeteria last Friday around noon. He hurt his ankle and it looked serious. We gave first aid and took him to the clinic. Mira saw it happen.
+      - persons_involved: got 'rovey'
+      - witness_information: got 'mira'
+  case 5: 5/5 fields right, 0 invented, gate ok  (22s)
+  case 6: 4/4 fields right, 0 invented, gate ok  (21s)
+  case 7: 5/6 fields right, 0 invented, gate ok  (21s)
+      heard: Okay so the weather was terrible today, anyway, a ladder fell in the stock room at lunchtime and hit Sam on the shoulder. We gave him ice and he went home.
+      - incident_location: got 'stock room'
+  case 8: 5/5 fields right, 0 invented, gate ok  (21s)
+  case 9: 4/4 fields right, 0 invented, gate ok  (17s)
+  case 10: 2/2 fields right, 1 invented, gate ok  (18s)
+      heard: There was a strong gas smell in the basement.
+      - severity_level: should be empty, got 'Critical'
+  TOTAL: 44/48 fields correctly mapped (92%), 1 invented values, 10/10 gate decisions right, speech WER 4.4% (12/275)
+
+== spoken narration, 10 dB noise -> Whisper -> LLM
+  case 1: 5/5 fields right, 0 invented, gate ok  (22s)
+  case 2: 5/5 fields right, 0 invented, gate ok  (24s)
+  case 3: 5/5 fields right, 0 invented, gate ok  (20s)
+  case 4: 5/7 fields right, 0 invented, gate ok  (25s)
+      heard: Rubby slipped on a wet floor near the cafeteria last Friday around noon. He hurt his ankle and it looked serious. We gave first aid and took him to the clinic. Mira saw it happen.
+      - persons_involved: got 'rubby'
+      - witness_information: got 'mira'
+  case 5: 5/5 fields right, 0 invented, gate ok  (24s)
+  case 6: 4/4 fields right, 0 invented, gate ok  (26s)
+  case 7: 5/6 fields right, 0 invented, gate ok  (24s)
+      heard: Okay so the weather was terrible today, anyway, a ladder fell in the stock room at lunchtime and hit Sam on the shoulder. We gave him ice and he went home.
+      - incident_location: got 'stock room'
+  case 8: 5/5 fields right, 0 invented, gate ok  (20s)
+  case 9: 4/4 fields right, 0 invented, gate ok  (19s)
+  case 10: 2/2 fields right, 1 invented, gate ok  (19s)
+      heard: There was a strong gas smell in the basement.
+      - severity_level: should be empty, got 'High'
+  TOTAL: 45/48 fields correctly mapped (94%), 1 invented values, 10/10 gate decisions right, speech WER 4.0% (11/275)
+
+== multi-turn dialogue (clarification questions)
+  user: There was a strong gas smell in the basement.
+   -> collecting; asks: Got that. At what time or date did this occur?
+  user: It was around three PM yesterday.
+   -> collecting; asks: Understood. Has any immediate action or containment been taken yet?
+  user: We evacuated the floor and called the gas company.
+   -> complete; asks: None
+  final status: complete (ok); fields: {"incident_type": "Gas Leak", "severity_level": "High", "incident_location": "basement", "incident_description": "Strong gas smell", "date_time": "yesterday around three PM", "immediate_actions_taken": "Evacuated the floor and called the gas company"}

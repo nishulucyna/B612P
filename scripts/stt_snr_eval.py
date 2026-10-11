@@ -53,24 +53,29 @@ def stt(wav):
     t = time.time(); out = json.loads(urllib.request.urlopen(req, timeout=120).read().decode()).get("transcript", "")
     return out, time.time() - t
 
-tmp = os.path.join(os.environ.get("TEMP", "."), "stt_eval"); os.makedirs(tmp, exist_ok=True)
-rng = np.random.default_rng(1)
-clips = []
-for i, s in enumerate(SENTENCES):
-    p = os.path.join(tmp, f"s{i}.wav")
-    if not os.path.exists(p): synth(s, p)
-    clips.append(load16k(p))
-print("label:", sys.argv[1] if len(sys.argv) > 1 else "")
-for snr in SNRS:
-    errs = tot = 0; times = []; bad = []
-    for ref, x in zip(SENTENCES, clips):
-        y = x.copy()
-        if snr is not None:
-            n = rng.standard_normal(len(x)).astype(np.float32)
-            n *= np.sqrt(np.mean(x ** 2) / (10 ** (snr / 10)) / np.mean(n ** 2))
-            y = x + n
-        y *= 0.8 / max(1e-6, np.abs(y).max())
-        out, dt = stt(to_wav(y))
-        e, n_ = wer(ref, out); errs += e; tot += n_; times.append(dt)
-        if e: bad.append(out.strip())
-    print(f"SNR {snr if snr is not None else 'clean':>5}: WER {100*errs/tot:5.1f}%  ({errs}/{tot})  avg {np.mean(times):.1f}s/clip  e.g. {bad[0] if bad else ''}")
+def main():
+    tmp = os.path.join(os.environ.get("TEMP", "."), "stt_eval"); os.makedirs(tmp, exist_ok=True)
+    rng = np.random.default_rng(1)
+    clips = []
+    for i, s in enumerate(SENTENCES):
+        p = os.path.join(tmp, f"s{i}.wav")
+        if not os.path.exists(p): synth(s, p)
+        clips.append(load16k(p))
+    print("label:", sys.argv[1] if len(sys.argv) > 1 else "")
+    for snr in SNRS:
+        errs = tot = 0; times = []; bad = []
+        for ref, x in zip(SENTENCES, clips):
+            y = x.copy()
+            if snr is not None:
+                n = rng.standard_normal(len(x)).astype(np.float32)
+                n *= np.sqrt(np.mean(x ** 2) / (10 ** (snr / 10)) / np.mean(n ** 2))
+                y = x + n
+            y *= 0.8 / max(1e-6, np.abs(y).max())
+            out, dt = stt(to_wav(y))
+            e, n_ = wer(ref, out); errs += e; tot += n_; times.append(dt)
+            if e: bad.append(out.strip())
+        print(f"SNR {snr if snr is not None else 'clean':>5}: WER {100*errs/tot:5.1f}%  ({errs}/{tot})  avg {np.mean(times):.1f}s/clip  e.g. {bad[0] if bad else ''}")
+
+
+if __name__ == "__main__":
+    main()

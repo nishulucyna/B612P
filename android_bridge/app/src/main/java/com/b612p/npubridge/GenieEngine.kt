@@ -37,6 +37,8 @@ class GenieEngine @JvmOverloads constructor(
     private val context: Context,
     private val allowCpuFallback: Boolean = false,
     private val modelDir: File = File(ModelLoader.DEFAULT_ROOT, "llm"),
+    /** Dev only, for the NPU-vs-CPU benchmark (scripts/npu_proof.py). Always NPU in the real app. */
+    private val computeUnit: ComputeUnitValue = ComputeUnitValue.NPU,
 ) : LlmEngine {
 
     @Volatile private var llm: LlmWrapper? = null
@@ -60,7 +62,7 @@ class GenieEngine @JvmOverloads constructor(
                 model_path = gguf.absolutePath,
                 config = ModelConfig(nCtx = N_CTX, enable_thinking = false),
                 runtime_id = RuntimeIdValue.LLAMA_CPP.value,
-                compute_unit = ComputeUnitValue.NPU.value,
+                compute_unit = computeUnit.value,
             )
             val wrapper = runBlocking { LlmWrapper.builder().llmCreateInput(input).build() }.getOrThrow()
             llm = wrapper
