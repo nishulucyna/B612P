@@ -1,0 +1,42 @@
+[
+ {
+  "threads": 8,
+  "seconds": 13.644999999998618,
+  "cpu_seconds": 97.675,
+  "avg_cores": 7.158299743496511,
+  "decode": 10.55,
+  "prefill": 352.15
+ },
+ {
+  "threads": 4,
+  "seconds": 13.860000000000582,
+  "cpu_seconds": 51.870000000000005,
+  "avg_cores": 3.7424242424240854,
+  "decode": 10.15,
+  "prefill": 346.04999999999995
+ },
+ {
+  "threads": 3,
+  "seconds": 14.349999999998545,
+  "cpu_seconds": 40.724999999999994,
+  "avg_cores": 2.8379790940769425,
+  "decode": 9.75,
+  "prefill": 343.54999999999995
+ },
+ {
+  "threads": 2,
+  "seconds": 15.329999999999927,
+  "cpu_seconds": 29.19,
+  "avg_cores": 1.904109589041105,
+  "decode": 9.2,
+  "prefill": 338.29999999999995
+ },
+ {
+  "threads": 1,
+  "seconds": 17.19499999999971,
+  "cpu_seconds": 16.585,
+  "avg_cores": 0.9645245710962653,
+  "decode": 8.0,
+  "prefill": 337.35
+ }
+]

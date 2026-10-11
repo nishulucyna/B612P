@@ -6,6 +6,13 @@
     <!-- The on-device assistant listens through the phone microphone. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Android 11+ hides other apps: needed to find the phone's offline text-to-speech engine. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="false"
         android:label="Incident Assistant"

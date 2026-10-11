@@ -23,6 +23,8 @@ object AppSession {
     @Volatile var busySinceMillis = 0L
     @Volatile var lastError: String? = null
     @Volatile var lastAudioNote: String? = null
+    /** Where the last submitted report was written on this device. */
+    @Volatile var savedPath: String? = null
 
     /** Speech recognition on the NPU for a recorded WAV. */
     fun transcribe(wav: ByteArray): String {

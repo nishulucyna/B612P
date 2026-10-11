@@ -85,7 +85,8 @@ public class BridgeService extends Service {
             String unit = intent != null ? intent.getStringExtra("llm_unit") : null;
             final GenieEngine genie = new GenieEngine(this, allowCpu, new java.io.File(ModelLoader.DEFAULT_ROOT, "llm"),
                     "CPU".equalsIgnoreCase(unit) ? com.geniex.sdk.bean.ComputeUnitValue.CPU : com.geniex.sdk.bean.ComputeUnitValue.NPU,
-                    intent != null ? intent.getStringExtra("llm_file") : null);
+                    intent != null ? intent.getStringExtra("llm_file") : null,
+                    intent != null ? intent.getIntExtra("llm_threads", GenieEngine.DEFAULT_THREADS) : GenieEngine.DEFAULT_THREADS);
             stt = whisper;
             llm = genie;
             // Model loading takes a while; keep the HTTP server (and /health) responsive meanwhile.

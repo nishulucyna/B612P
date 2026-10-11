@@ -67,6 +67,27 @@ class IncidentSession(private val llm: (String) -> String) {
         return Turn(state, null, speech)
     }
 
+    /**
+     * The user corrects fields by hand on the review screen. The edits go through the same gate as a spoken turn: if the four
+     * mandatory fields are now present the report becomes "complete", otherwise it keeps asking. Undo reverts it.
+     */
+    @Synchronized fun editFields(edits: Map<String, String?>): Turn {
+        ensureOpen()
+        history.add(state to messages.size)
+        while (history.size > 10) history.removeAt(0)
+        val cleaned = IncidentBrain.sanitize(edits)
+        val fields = LinkedHashMap(state.fields)
+        for (key in edits.keys) if (key in IncidentBrain.ALL_FIELDS) fields[key] = cleaned[key]
+        val missing = IncidentBrain.identifyMissing(fields)
+        state = if (missing.isNotEmpty()) {
+            IncidentState(state.sessionId, "collecting", missing, IncidentBrain.clarificationQuestion(missing[0], fields), fields, null)
+        } else {
+            IncidentState(state.sessionId, "complete", emptyList(), null, fields,
+                ToolCall("populate_incident_form", fields, IncidentBrain.summaryFor(fields)))
+        }
+        return Turn(state, null, null)
+    }
+
     /** Submit the report, optionally with manual edits to the fields. Needs the 4 mandatory fields. */
     @Synchronized fun submit(edits: Map<String, String?>? = null): Turn {
         ensureOpen()

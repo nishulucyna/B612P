@@ -2,6 +2,12 @@ package com.b612p.npubridge
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
+import android.speech.tts.TextToSpeech
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -57,6 +63,10 @@ class MainActivity : Activity() {
     private lateinit var resetBtn: Button
     private lateinit var sendBtn: Button
     private var lastSignature = ""
+    private lateinit var voiceBtn: Button
+    private var tts: TextToSpeech? = null
+    private var ttsReady = false
+    private var voiceOn = true
 
     // ---- small view helpers ------------------------------------------------------------
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
@@ -95,11 +105,21 @@ class MainActivity : Activity() {
         window.statusBarColor = cBg
         window.navigationBarColor = cBg
         buildStaticViews()
+        // Spoken replies use the phone's own offline text-to-speech engine; nothing leaves the device.
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val r = tts?.setLanguage(Locale.US)
+                ttsReady = r != null && r >= TextToSpeech.LANG_AVAILABLE
+            }
+            if (!ttsReady) app.lastAudioNote = "Spoken replies are unavailable (no offline text-to-speech engine). The text on screen still works."
+            ui.post { voiceBtn.text = voiceLabel() }
+        }
         // starts the AI engines (and the optional laptop bridge); safe to call again
         startService(Intent(this, BridgeService::class.java)
             .putExtra(BridgeService.EXTRA_ALLOW_CPU_FALLBACK, intent.getBooleanExtra(BridgeService.EXTRA_ALLOW_CPU_FALLBACK, false))
             .putExtra("llm_unit", intent.getStringExtra("llm_unit"))        // dev benchmark switches, see scripts/npu_proof.py
-            .putExtra("llm_file", intent.getStringExtra("llm_file")))
+            .putExtra("llm_file", intent.getStringExtra("llm_file"))
+            .putExtra("llm_threads", intent.getIntExtra("llm_threads", GenieEngine.DEFAULT_THREADS)))
     }
 
     private val tick = object : Runnable {
@@ -110,7 +130,19 @@ class MainActivity : Activity() {
     }
 
     override fun onResume() { super.onResume(); ui.post(tick) }
-    override fun onPause() { ui.removeCallbacks(tick); super.onPause() }
+    override fun onPause() { ui.removeCallbacks(tick); tts?.stop(); super.onPause() }
+    override fun onDestroy() { tts?.shutdown(); super.onDestroy() }
+
+    private fun voiceLabel() = when {
+        !ttsReady -> "Voice: unavailable"
+        voiceOn -> "Voice: on"
+        else -> "Voice: off"
+    }
+
+    private fun say(text: String?) {
+        if (text.isNullOrBlank() || !voiceOn || !ttsReady) return
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "reply")
+    }
 
     private fun buildStaticViews() {
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), dp(16), dp(14), dp(40)) }
@@ -124,12 +156,18 @@ class MainActivity : Activity() {
 
         speakBtn = button("Speak", true) { onSpeak() }
         undoBtn = button("Undo", false) { act("undo") { app.session.undo() } }
-        resetBtn = button("Reset", false) { act("reset") { app.session.reset() } }
+        resetBtn = button("Reset", false) { act("reset") { app.savedPath = null; app.session.reset() } }
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         row.addView(speakBtn, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 2f).apply { rightMargin = dp(8) })
         row.addView(undoBtn, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { rightMargin = dp(8) })
         row.addView(resetBtn, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         root.addView(row, params(bottom = 8))
+        voiceBtn = button("Voice: ...", false) {
+            if (ttsReady) { voiceOn = !voiceOn; if (!voiceOn) tts?.stop() }
+            voiceBtn.text = voiceLabel()
+        }
+        voiceBtn.minHeight = dp(40)
+        root.addView(voiceBtn, params(bottom = 8))
 
         busyLine = label("", 14f, cAmber, bold = true)
         root.addView(busyLine, params(bottom = 6))
@@ -163,7 +201,11 @@ class MainActivity : Activity() {
         refresh(force = true)
         app.worker.execute {
             try {
-                work()
+                val turn = work()
+                if (turn != null) {
+                    val line = if (turn.state.status == "submitted") "The incident report has been submitted." else turn.speech
+                    ui.post { say(line) }
+                }
             } catch (e: Exception) {
                 app.lastError = when (e) {
                     is NothingToUndoException -> "Nothing to undo."
@@ -196,6 +238,7 @@ class MainActivity : Activity() {
             return
         }
         app.lastAudioNote = null
+        tts?.stop()                              // do not record our own voice
         act("speak") {
             app.busyText = "Listening - speak now (tap Speak again to stop)"
             val rec = app.recorder.record()
@@ -221,6 +264,30 @@ class MainActivity : Activity() {
         if (requestCode == 7 && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) onSpeak()
         else app.lastError = "Microphone permission was denied, so Speak cannot work. Type the report instead."
         refresh(force = true)
+    }
+
+    /** Review step: correct or fill a field by hand. Goes through the same mandatory-field gate as a spoken turn. */
+    private fun editField(key: String, current: String) {
+        if (app.busy) return
+        val box = EditText(this).apply {
+            setText(current); setSelection(current.length); inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+        }
+        AlertDialog.Builder(this)
+            .setTitle(labels[key] ?: key)
+            .setView(box)
+            .setPositiveButton("Save") { _, _ -> act("edit") { app.session.editFields(mapOf(key to box.text.toString().trim())) } }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    /** "Submit Report": write the finished report (the 10 contract fields) to this device. */
+    private fun saveReport(state: IncidentState): String {
+        val dir = File(getExternalFilesDir(null), "reports").apply { mkdirs() }
+        val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        val file = File(dir, "incident_${stamp}_${state.sessionId}.json")
+        file.writeText(MiniJson.dumpsFlat(IncidentBrain.ALL_FIELDS.associateWith { state.fields[it] }))
+        return file.absolutePath
     }
 
     // ---- drawing ------------------------------------------------------------------------------------
@@ -260,7 +327,7 @@ class MainActivity : Activity() {
 
         val head: String; val body: String; val accent: Int
         when (state.status) {
-            "submitted" -> { head = "SUBMITTED"; body = "The incident report was submitted. Tap Reset to start a new one."; accent = cGreen }
+            "submitted" -> { head = "SUBMITTED"; body = "The incident report was submitted" + (app.savedPath?.let { " and saved on this device:\n$it" } ?: "") + ".\nTap Reset to start a new one."; accent = cGreen }
             "complete" -> { head = "REPORT READY - REVIEW AND SUBMIT"; body = state.toolCall?.summaryForTts ?: ""; accent = cGreen }
             else -> { head = "ASSISTANT - NEXT QUESTION"; body = state.nextPrompt ?: ""; accent = cBlue }
         }
@@ -284,7 +351,8 @@ class MainActivity : Activity() {
 
         val filled = state.fields.values.count { !it.isNullOrBlank() }
         val mandatoryMet = IncidentBrain.MANDATORY_FIELDS.count { !state.fields[it].isNullOrBlank() }
-        dynamic.addView(label("Incident report  -  $filled/10 fields, $mandatoryMet/4 required", 13f, cMuted, bold = true), params(top = 8, bottom = 4))
+        dynamic.addView(label("Incident report  -  $filled/10 fields, $mandatoryMet/4 required", 13f, cMuted, bold = true), params(top = 8, bottom = 0))
+        if (state.status != "submitted") dynamic.addView(label("Tap any field to correct it.", 12f, cMuted), params(bottom = 4))
         for (key in IncidentBrain.ALL_FIELDS) {
             val v = state.fields[key]
             val required = key in IncidentBrain.MANDATORY_FIELDS
@@ -294,16 +362,20 @@ class MainActivity : Activity() {
                 else -> cLine
             }
             val title = (labels[key] ?: key).uppercase() + if (required) "   REQUIRED" else ""
-            dynamic.addView(
-                card(label(title, 10.5f, if (!v.isNullOrBlank()) cGreen else if (required) cAmber else cMuted, bold = true),
-                    label(if (v.isNullOrBlank()) "- awaiting voice input -" else v, if (v.isNullOrBlank()) 14f else 16f,
-                        if (v.isNullOrBlank()) cMuted else cText),
-                    stroke = color, fill = if (!v.isNullOrBlank()) Color.parseColor("#0b2418") else cCard),
-                params(bottom = 6))
+            val fieldCard = card(label(title, 10.5f, if (!v.isNullOrBlank()) cGreen else if (required) cAmber else cMuted, bold = true),
+                label(if (v.isNullOrBlank()) "- awaiting voice input -" else v, if (v.isNullOrBlank()) 14f else 16f,
+                    if (v.isNullOrBlank()) cMuted else cText),
+                stroke = color, fill = if (!v.isNullOrBlank()) Color.parseColor("#0b2418") else cCard)
+            if (state.status != "submitted") fieldCard.setOnClickListener { editField(key, v ?: "") }      // review: tap to correct
+            dynamic.addView(fieldCard, params(bottom = 6))
         }
 
         val submit = button(if (state.status == "submitted") "Submitted" else "Confirm & submit report", state.status == "complete") {
-            act("submit") { app.session.submit() }
+            act("submit") {
+                val t = app.session.submit()
+                app.savedPath = saveReport(t.state)
+                t
+            }
         }.apply { isEnabled = state.status == "complete" }
         dynamic.addView(submit, params(top = 8, bottom = 4))
         dynamic.addView(label("Everything above ran on this device. No network was used.", 11.5f, cMuted), params(top = 6))

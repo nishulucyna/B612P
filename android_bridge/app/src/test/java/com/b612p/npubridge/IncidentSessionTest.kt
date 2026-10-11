@@ -62,6 +62,21 @@ class IncidentSessionTest {
     }
 
     @Test
+    fun manualEditsGoThroughTheGateAndCanBeUndone() {
+        val s = session("""{"incident_type":"Fire","incident_location":"Lab"}""")
+        s.textTurn("fire in the lab")
+        val t = s.editFields(mapOf("date_time" to "noon", "immediate_actions_taken" to "Evacuated", "incident_location" to "Lab 2"))
+        assertEquals("complete", t.state.status)
+        assertEquals("Lab 2", t.state.fields["incident_location"])
+        assertEquals("populate_incident_form", t.state.toolCall!!.function)
+        val cleared = s.editFields(mapOf("date_time" to ""))
+        assertEquals("collecting", cleared.state.status)
+        assertEquals(listOf("date_time"), cleared.state.missing)
+        s.undo()
+        assertEquals("complete", s.state().status)
+    }
+
+    @Test
     fun resetStartsOver() {
         val s = session("""{"incident_type":"Fire"}""")
         s.textTurn("fire")

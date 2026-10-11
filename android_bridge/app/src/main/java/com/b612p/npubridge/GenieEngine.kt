@@ -41,6 +41,8 @@ class GenieEngine @JvmOverloads constructor(
     private val computeUnit: ComputeUnitValue = ComputeUnitValue.NPU,
     /** Dev only: pick a specific .gguf in the model folder (model comparison). Null = model.gguf, else the first .gguf. */
     private val modelFile: String? = null,
+    /** CPU threads for the parts of the model that run on the CPU (0 = SDK default of 8, pinned and busy-polling). */
+    private val threads: Int = 0,
 ) : LlmEngine {
 
     @Volatile private var llm: LlmWrapper? = null
@@ -62,7 +64,8 @@ class GenieEngine @JvmOverloads constructor(
             val input = LlmCreateInput(
                 model_name = gguf.nameWithoutExtension,
                 model_path = gguf.absolutePath,
-                config = ModelConfig(nCtx = N_CTX, enable_thinking = false),
+                config = if (threads > 0) ModelConfig(nCtx = N_CTX, nThreads = threads, nThreadsBatch = threads, enable_thinking = false)
+                         else ModelConfig(nCtx = N_CTX, enable_thinking = false),
                 runtime_id = RuntimeIdValue.LLAMA_CPP.value,
                 compute_unit = computeUnit.value,
             )
@@ -262,6 +265,12 @@ class GenieEngine @JvmOverloads constructor(
     }
 
     companion object {
+        /**
+         * Measured on the board (scripts/llm_thread_sweep.py, same output at every setting): 8 threads 13.6 s and 98 CPU-seconds per
+         * extraction, 2 threads 15.3 s and 29 CPU-seconds. The SDK's 8 pinned busy-polling threads just spin while the NPU works.
+         */
+        const val DEFAULT_THREADS = 2
+
         private const val TAG = "NpuBridge"
         private const val N_CTX = 2048       // prompt (~600 tokens) + JSON answer fit comfortably
         private const val MAX_NEW_TOKENS = 512

@@ -151,3 +151,21 @@ invent text from silence.
 - The tiny Whisper model mishears rare words ("forklift" came out as "A4 Clifed" once).
 - GenieX reports no direct "which processor" API; we read its placement log (see `android_bridge/README.md`).
 - Gemma: about half of its weight bytes (mostly embedding tables) stay on the CPU, which is normal for llama.cpp.
+
+
+## Standalone mode: the phone alone, offline (no laptop)
+
+Everything runs inside the **Incident Assistant** app on the HDK8650: speech recognition (Whisper-small on the Hexagon DSP), extraction
+(Gemma on the NPU), the mandatory-field gate and tool call, the touch UI, and spoken replies from an offline Piper voice engine.
+
+1. Once, over USB: `powershell -ExecutionPolicy Bypass -File scripts\install_standalone.ps1` (pushes the models, installs the app and voice
+   engine, grants the microphone, sets the default voice engine).
+2. After every board reboot: `adb shell setenforce 0` (the app reads models from /data/local/tmp), and close Chrome on the board.
+3. Unplug the laptop, turn Wi-Fi off if you like. Open **Incident Assistant**, wait about 40 s for the green bar.
+4. Tap **Speak** and describe the incident (tap again to stop), or type and tap **Send**. The assistant answers on screen and aloud;
+   it asks one question at a time until the four required fields are present.
+5. Review: tap any field to correct it. **Confirm & submit report** saves the report as JSON (the 10 contract fields) in
+   `/sdcard/Android/data/com.b612p.npubridge/files/reports/`.
+
+The microphone needs the speaker's voice within about a metre; a headset mic is better in a noisy room. `Voice: on/off` mutes the replies.
+Laptop mode (Streamlit UI + orchestrator) still works as described above.
