@@ -1,6 +1,6 @@
 """How many CPU threads does the LLM really need? Restarts the app on the board with different llm_threads values and measures
 extraction time, token speeds and real CPU use (CPU-seconds per extraction) on the same two prompts.  python scripts/llm_thread_sweep.py [threads ...]"""
-import json, sys, time
+import json, os, sys, time
 sys.path.insert(0, ".")
 sys.path.insert(0, "scripts")
 import npu_proof as P
@@ -16,6 +16,8 @@ for t in levels:
     P.sh("setenforce 0")
     P.adb("logcat", "-c")
     extras = ["--ei", "llm_threads", str(t)] if t else []
+    if os.environ.get("LLM_FILE"):
+        extras += ["--es", "llm_file", os.environ["LLM_FILE"]]
     P.adb("shell", "am", "start", "-n", f"{P.PKG}/.MainActivity", *extras)
     health = P.wait_ready(480)
     pid = P.pid()

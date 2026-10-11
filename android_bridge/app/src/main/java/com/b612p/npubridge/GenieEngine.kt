@@ -46,6 +46,15 @@ class GenieEngine @JvmOverloads constructor(
 ) : LlmEngine {
 
     @Volatile private var llm: LlmWrapper? = null
+
+    // The UI polls the state above many times a second. Only generation and model switching take this lock.
+    private val lock = Any()
+
+    /** Model file in use. Starts as the constructor's choice (default: Gemma, model.gguf) and changes only through [switchModel]. */
+    @Volatile private var activeFile: String? = modelFile
+
+    /** Quick mode = the smaller Qwen model plus [IncidentGuard]. Off at every launch: the app always starts on the accurate model. */
+    @Volatile private var quickMode = false
     @Volatile private var ready = false
     @Volatile private var onNpu = false
     @Volatile private var warning: String? = null
@@ -109,7 +118,7 @@ class GenieEngine @JvmOverloads constructor(
 
     override fun warning(): String? = warning
 
-    override fun generate(prompt: String): String {
+    override fun generate(prompt: String): String = synchronized(lock) {
         val model = llm
         if (!ready || model == null) {
             throw IllegalStateException(status)
@@ -130,7 +139,57 @@ class GenieEngine @JvmOverloads constructor(
                     .format(profile.decodingSpeed, profile.prefillSpeed),
             )
         }
-        return if (isIncidentExtraction) IncidentJson.nullPlaceholders(text) else text
+        if (!isIncidentExtraction) {
+            text
+        } else {
+            val cleaned = IncidentJson.nullPlaceholders(text)
+            if (quickMode) IncidentGuard.apply(prompt, cleaned) else cleaned      // Gemma's path is unchanged
+        }
+    }
+
+    /** True while the quick (Qwen) model is the active one. */
+    fun isQuickMode(): Boolean = quickMode
+
+    /** The quick model file is on the device (pushed next to the main one). */
+    fun isQuickAvailable(): Boolean = File(modelDir, QUICK_MODEL_FILE).isFile
+
+    /**
+     * Swap the language model in place: free the current one, load the other, check its placement on the NPU like at start-up.
+     * Slow (tens of seconds); call off the main thread. If the new model cannot be loaded the previous one is restored and this throws.
+     * Whisper is not touched. The report in progress is kept.
+     */
+    fun switchModel(quick: Boolean) {
+        synchronized(lock) {
+            if (quick == quickMode) return
+            if (quick && !isQuickAvailable()) throw IllegalStateException("The quick model ($QUICK_MODEL_FILE) is not installed on this device.")
+            val previousFile = activeFile
+            val previousQuick = quickMode
+            ready = false
+            onNpu = false
+            status = "llm: switching model..."
+            closeCurrent()
+            activeFile = if (quick) QUICK_MODEL_FILE else modelFile
+            quickMode = quick
+            load()
+            if (!ready) {
+                val why = warning ?: status
+                Log.e(TAG, "NPU_ALERT: model switch failed ($why); restoring the previous model")
+                closeCurrent()
+                activeFile = previousFile
+                quickMode = previousQuick
+                load()
+                throw IllegalStateException("Could not switch the model: $why")
+            }
+        }
+    }
+
+    private fun closeCurrent() {
+        try {
+            llm?.close()
+        } catch (t: Throwable) {
+            Log.w(TAG, "closing the previous model failed: $t")
+        }
+        llm = null
     }
 
     private fun complete(
@@ -196,8 +255,11 @@ class GenieEngine @JvmOverloads constructor(
             val proc = Runtime.getRuntime().exec(
                 arrayOf("logcat", "-d", "--pid=$pid", "-v", "raw", "-s", "GenieXSdk:V"),
             )
-            val text = proc.inputStream.bufferedReader().readText()
+            val all = proc.inputStream.bufferedReader().readText()
             proc.waitFor()
+            // The log keeps every model loaded in this process; after a model switch only the newest load counts.
+            val start = all.lastIndexOf("LlmCreateInput(")
+            val text = if (start >= 0) all.substring(start) else all
 
             val usesHtp = Regex("""Using \d+ device\(s\): HTP""").containsMatchIn(text) ||
                 Regex("""using device HTP""").containsMatchIn(text)
@@ -256,7 +318,7 @@ class GenieEngine @JvmOverloads constructor(
     }
 
     private fun findModel(): File? {
-        val preferred = File(modelDir, modelFile ?: "model.gguf")
+        val preferred = File(modelDir, activeFile ?: "model.gguf")
         if (preferred.isFile) {
             return preferred
         }
@@ -271,6 +333,9 @@ class GenieEngine @JvmOverloads constructor(
          * threads mostly spin while the NPU works, so 4 is the same speed for half the CPU. This is not a slowdown.
          */
         const val DEFAULT_THREADS = 4
+
+        /** The quick model, an all-Q4_0 Qwen3-1.7B (see docs/demo_runbook.md): the Hexagon backend can run every layer of it. */
+        const val QUICK_MODEL_FILE = "qwen3-1.7b-pureq4_0.gguf"
 
         private const val TAG = "NpuBridge"
         private const val N_CTX = 2048       // prompt (~600 tokens) + JSON answer fit comfortably

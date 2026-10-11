@@ -28,6 +28,9 @@ Adb push $gguf /data/local/tmp/npu_models/llm/model.gguf
 Adb push $enc  /data/local/tmp/npu_models/whisper/
 Adb push $dec  /data/local/tmp/npu_models/whisper/
 Adb push $emb  /data/local/tmp/npu_models/whisper/
+# Optional "Qwen - quick" button in the app: the all-Q4_0 Qwen3-1.7B file (see docs/demo_runbook.md). Without it the button shows "not installed".
+$quick = "$root\llm_prep\qwen3_1p7b\qwen3-1.7b-pureq4_0.gguf"
+if (Test-Path $quick) { Adb push $quick /data/local/tmp/npu_models/llm/ } else { Write-Host "(quick model not found, skipping: the Qwen button will say not installed)" }
 Write-Host "installing apps ..."
 Adb install -r $apk
 Adb install -r $tts

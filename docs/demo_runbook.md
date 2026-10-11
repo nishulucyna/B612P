@@ -171,3 +171,21 @@ Everything runs inside the **Incident Assistant** app on the HDK8650: speech rec
 
 The microphone needs the speaker's voice within about a metre; a headset mic is better in a noisy room. The **Voice** button mutes the replies.
 Laptop mode (Streamlit UI + orchestrator) still works as described above.
+
+### Model toggle: Gemma (accurate) or Qwen (quick)
+
+Under the NPU strip, **Model** switches the language model in place. Every launch starts on **Gemma**, the verified default.
+
+| | Gemma 4 E4B (default) | Qwen3-1.7B all-Q4_0 (quick) |
+|---|---|---|
+| Time per extraction | about 14 s | about 4 s |
+| CPU time per extraction | about 52 cpu-s | about 15 cpu-s |
+| Weights on the NPU | 40% | 69% (82% of unique weights) |
+| Extraction accuracy (22 typed narrations) | 97/99 fields, 22/22 gate decisions | 97/99 fields, 22/22 gate decisions (with the guard) |
+
+* Switching takes a few seconds (up to about 40 s cold); the report in progress and Whisper are kept.
+* Quick mode applies `IncidentGuard` (port of `scripts/llm_guard.py`): placeholder values such as "current time" or "date not specified" are
+  dropped so the report cannot complete without a real date, and made-up follow-up advice that the speaker never said is dropped.
+  Without it Qwen completed 2 of 12 held-out reports that should still have asked a question. Gemma never goes through the guard.
+* Needs `qwen3-1.7b-pureq4_0.gguf` in `/data/local/tmp/npu_models/llm/` (`install_standalone.ps1` pushes it when present; made with
+  `llama-quantize --pure --token-embedding-type q4_0 --output-tensor-type q4_0` from the BF16 GGUF). Otherwise the button reads "not installed".

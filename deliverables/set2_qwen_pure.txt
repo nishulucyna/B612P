@@ -1,0 +1,22 @@
+
+== typed narration -> LLM
+  case 1: 4/4 fields right, 2 invented, gate ok  (4s)
+      - persons_involved: should be empty, got 'Maintenance'
+      - recommended_follow_up_action: should be empty, got 'Inspect the area for further issues and ensure proper drainage'
+  case 2: 6/6 fields right, 0 invented, gate ok  (5s)
+  case 3: 5/5 fields right, 0 invented, gate ok  (4s)
+  case 4: 5/5 fields right, 0 invented, gate ok  (5s)
+  case 5: 3/3 fields right, 1 invented, gate WRONG  (5s)
+      - date_time: should be empty, got 'current time (not specified)'
+      - status complete != collecting
+  case 6: 6/6 fields right, 0 invented, gate ok  (4s)
+  case 7: 5/5 fields right, 0 invented, gate ok  (4s)
+  case 8: 3/3 fields right, 1 invented, gate WRONG  (5s)
+      - date_time: should be empty, got 'current time'
+      - status complete != collecting
+  case 9: 5/5 fields right, 0 invented, gate ok  (5s)
+  case 10: 4/4 fields right, 0 invented, gate ok  (4s)
+  case 11: 4/4 fields right, 0 invented, gate ok  (5s)
+  case 12: 1/1 fields right, 1 invented, gate ok  (4s)
+      - severity_level: should be empty, got 'High'
+  TOTAL: 51/51 fields correctly mapped (100%), 5 invented values, 10/12 gate decisions right

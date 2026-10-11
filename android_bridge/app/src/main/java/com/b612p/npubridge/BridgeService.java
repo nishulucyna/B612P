@@ -26,6 +26,12 @@ public class BridgeService extends Service {
         return llm;
     }
 
+    /** The Genie engine, for the model switch in the UI (null until the service has started). */
+    public static GenieEngine genieEngine() {
+        LlmEngine l = llm;
+        return l instanceof GenieEngine ? (GenieEngine) l : null;
+    }
+
     public static final int STATE_LOADING = 0;
     public static final int STATE_OK = 1;
     public static final int STATE_ALERT = 2;

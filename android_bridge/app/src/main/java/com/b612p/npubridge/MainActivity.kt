@@ -85,6 +85,8 @@ class MainActivity : Activity() {
     private lateinit var npuNote: TextView
     private lateinit var pillStt: TextView
     private lateinit var pillLlm: TextView
+    private lateinit var pillGemma: TextView
+    private lateinit var pillQwen: TextView
     private lateinit var content: LinearLayout
     private lateinit var typeRow: LinearLayout
     private lateinit var input: EditText
@@ -245,6 +247,21 @@ class MainActivity : Activity() {
             setMargins(dp(16), dp(4), dp(16), dp(6))
         })
 
+        // model toggle: Gemma (accurate, default at every launch) or Qwen (quick). Loads the other model onto the NPU in place.
+        val modelRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        modelRow.addView(text("Model", 12.5f, c.muted, bold = true).apply { setPadding(0, 0, dp(10), 0) })
+        pillGemma = text("Gemma · accurate", 12.5f, c.muted, bold = true).apply {
+            gravity = Gravity.CENTER; setPadding(dp(8), dp(7), dp(8), dp(7)); setOnClickListener { switchModel(quick = false) }
+        }
+        pillQwen = text("Qwen · quick", 12.5f, c.muted, bold = true).apply {
+            gravity = Gravity.CENTER; setPadding(dp(8), dp(7), dp(8), dp(7)); setOnClickListener { switchModel(quick = true) }
+        }
+        modelRow.addView(pillGemma, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { rightMargin = dp(6) })
+        modelRow.addView(pillQwen, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        root.addView(modelRow, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            setMargins(dp(16), 0, dp(16), dp(4))
+        })
+
         // scrolling content
         content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(6), dp(16), dp(20)) }
         scroll = ScrollView(this).apply { addView(content) }
@@ -336,6 +353,17 @@ class MainActivity : Activity() {
                 app.busy = false
                 ui.post { refresh(force = true) }
             }
+        }
+    }
+
+    /** Gemma (accurate, about 14 s per turn) or Qwen (quick, about 4 s). The report in progress is kept; Whisper is not touched. */
+    private fun switchModel(quick: Boolean) {
+        val g = BridgeService.genieEngine() ?: return
+        if (app.busy || g.isQuickMode() == quick) return
+        act("model") {
+            app.busyText = "Switching model: loading " + (if (quick) "Qwen3-1.7B (quick)" else "Gemma 4 (accurate)") + " on the NPU..."
+            g.switchModel(quick)
+            null
         }
     }
 
@@ -456,8 +484,19 @@ class MainActivity : Activity() {
             p.setTextColor(if (on) c.onBlue else c.muted)
             p.background = shape(if (on) c.blue else c.neutral, if (on) 0 else c.border, 99)
         }
+        val engine = BridgeService.genieEngine()
+        val quick = engine?.isQuickMode() == true
         style(pillStt, "Whisper · DSP", sttActive)
-        style(pillLlm, "Gemma · NPU", llmActive)
+        style(pillLlm, (if (quick) "Qwen" else "Gemma") + " · NPU", llmActive)
+        val canSwitch = engine != null && !app.busy && engine.isReady()
+        fun toggleStyle(p: TextView, active: Boolean, enabled: Boolean) {
+            p.setTextColor(if (active) c.onBlue else if (enabled) c.text else c.muted)
+            p.background = shape(if (active) c.blue else c.card, if (active) 0 else c.border, 99)
+            p.alpha = if (enabled || active) 1f else 0.5f
+        }
+        toggleStyle(pillGemma, !quick, canSwitch)
+        toggleStyle(pillQwen, quick, canSwitch && engine?.isQuickAvailable() == true)
+        pillQwen.text = if (engine != null && !engine.isQuickAvailable()) "Qwen · not installed" else "Qwen · quick"
         if (NpuMonitor.available) {
             spark.setData(NpuMonitor.snapshot())
             npuRate.text = "%.0f/s".format(NpuMonitor.rate)
@@ -476,7 +515,7 @@ class MainActivity : Activity() {
         micBtn.background = shape(when { working -> c.border; listening -> c.rec; else -> c.blue }, 0, 32, oval = true)
         micIcon.setImageResource(if (listening) R.drawable.ic_stop else R.drawable.ic_mic)
         micIcon.setColorFilter(when { working -> c.muted; listening -> Color.WHITE; else -> c.onBlue })
-        micCaption.text = when { listening -> "Tap to stop"; working -> "Working on device"; else -> "Tap to speak" }
+        micCaption.text = when { listening -> "Tap to stop"; working && app.busyText.startsWith("Switching") -> "Switching model"; working -> "Working on device"; else -> "Tap to speak" }
         micBtn.isEnabled = !working
         undoBtn.alpha = if (app.busy) 0.4f else 1f
         newBtn.alpha = if (app.busy) 0.4f else 1f
@@ -506,7 +545,11 @@ class MainActivity : Activity() {
         when (ph) {
             Phase.IDLE -> { title = "Report an incident"; sub = "Describe the incident naturally. I'll complete the report for you." }
             Phase.LISTENING -> { title = "Listening"; sub = "Speak now. Tap the red button when you are done." }
-            Phase.PROCESSING -> { title = "Processing on device"; sub = "Speech recognition and the language model are running on the Snapdragon NPU." }
+            Phase.PROCESSING -> if (app.busyText.startsWith("Switching")) {
+                title = "Switching model"; sub = "Your report is kept. Whisper stays loaded."
+            } else {
+                title = "Processing on device"; sub = "Speech recognition and the language model are running on the Snapdragon NPU."
+            }
             Phase.COLLECTING -> {
                 title = "Still need details"
                 sub = "Waiting on " + state.missing.joinToString(", ") { (labels[it] ?: it).lowercase() }.ifBlank { "more details" } + "."
@@ -542,7 +585,7 @@ class MainActivity : Activity() {
                     text("The phone microphone is listening. I stop by myself after a pause.", 13f, c.muted).apply { setPadding(0, dp(4), 0, 0) }),
                     lp(bottom = 10))
             }
-            Phase.PROCESSING -> content.addView(processingCard(), lp(bottom = 10))
+            Phase.PROCESSING -> content.addView(if (app.busyText.startsWith("Switching")) switchingCard() else processingCard(), lp(bottom = 10))
             Phase.IDLE -> content.addView(card(c.neutral, c.border,
                 row(icon(R.drawable.ic_shield, 16, c.muted),
                     text("Speech, extraction and spoken replies all run on this phone. Nothing is sent to the internet.", 12.5f, c.muted))), lp(bottom = 10))
@@ -619,6 +662,14 @@ class MainActivity : Activity() {
             }
         }
         scroll.post { scroll.scrollTo(0, keepScroll) }
+    }
+
+    private fun switchingCard(): View {
+        val secs = (System.currentTimeMillis() - app.busySinceMillis) / 1000
+        return card(c.card, c.border,
+            row(icon(R.drawable.ic_chip, 18, c.blue), text("Loading the model onto the NPU", 14f, c.text, bold = true)),
+            text(app.busyText.removePrefix("Switching model: ").replaceFirstChar { it.uppercase() }, 13f, c.muted).apply { setPadding(0, dp(6), 0, dp(4)) },
+            text("A few seconds, up to about 40 on a cold start.  ${secs}s", 12f, c.blue))
     }
 
     private fun processingCard(): View {

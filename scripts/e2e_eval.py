@@ -50,8 +50,50 @@ CASES = [
 ]
 
 
+# Held-out second set: harder wording, unstated details (must stay empty), corrections, and reports that must NOT be completed.
+CASES2 = [
+    dict(text="Water leak near Conference Room 2 around 10 AM. Maintenance has already isolated the area.",
+         want=dict(incident_type=["leak", "water"], incident_location=["conference room 2", "conference room two"], date_time=["10"], immediate_actions_taken=["isolat"]),
+         empty=["persons_involved", "witness_information", "recommended_follow_up_action"]),
+    dict(text="At 6:45 this morning Deepak Rao fell off the loading dock at gate three. He broke his wrist. We called an ambulance and kept him still. Two drivers, Salim and Joe, saw it.",
+         want=dict(incident_type=["fall", "fell"], incident_location=["gate three", "gate 3", "loading dock"], date_time=["6:45", "6.45", "morning"],
+                   immediate_actions_taken=["ambulance"], persons_involved=["deepak"], witness_information=["salim", "joe"])),
+    dict(text="Last night around midnight the chiller on the roof of block B stopped working. The temperature in the data centre went up to forty degrees. We switched on the backup unit and informed the facilities manager.",
+         want=dict(incident_type=["chiller", "cooling", "failure", "stopp", "temperature"], incident_location=["block b", "roof", "data cent"], date_time=["midnight", "last night"],
+                   immediate_actions_taken=["backup"], equipment_asset_involved=["chiller"])),
+    dict(text="Small fire in the pantry on the third floor at two PM today. A microwave caught fire. Someone used the extinguisher and it was out in a minute. Nobody was hurt.",
+         want=dict(incident_type=["fire"], incident_location=["pantry", "third floor"], date_time=["2", "two"], immediate_actions_taken=["extinguish"],
+                   equipment_asset_involved=["microwave"])),
+    dict(text="There is oil on the floor near the assembly line, it's a slip hazard. I put up a wet floor sign. I don't know when it started.",
+         want=dict(incident_type=["oil", "spill", "slip", "hazard"], incident_location=["assembly line"], immediate_actions_taken=["sign"]),
+         expect_status="collecting", empty=["date_time"]),
+    dict(text="Hi, so, we had a power cut in the east lab at about eleven fifteen, the UPS kicked in but the freezer alarm went off. Dr. Menon moved the samples to the backup freezer.",
+         want=dict(incident_type=["power"], incident_location=["east lab"], date_time=["11", "eleven"], immediate_actions_taken=["moved", "samples", "backup freezer"],
+                   persons_involved=["menon"], equipment_asset_involved=["ups", "freezer"])),
+    dict(text="A contractor, Mr. Fernandes, got an electric shock from an exposed cable while drilling in the basement yesterday at four thirty. He was taken to the clinic. The site supervisor has locked the area.",
+         want=dict(incident_type=["shock", "electric"], incident_location=["basement"], date_time=["yesterday", "4", "four"], immediate_actions_taken=["clinic", "locked"],
+                   persons_involved=["fernandes"])),
+    dict(text="Gas smell reported in the canteen kitchen. We opened the windows and turned off the main gas valve.",
+         want=dict(incident_type=["gas"], incident_location=["canteen", "kitchen"], immediate_actions_taken=["valve", "window"]),
+         expect_status="collecting", empty=["date_time"]),
+    dict(text="The crane hook snapped while lifting a steel beam at the north site at 9:10 AM on Tuesday. The beam fell but landed in the empty yard. We stopped all lifting work and called the inspector.",
+         want=dict(incident_type=["crane", "hook", "snap"], incident_location=["north site"], date_time=["9:10", "tuesday"], immediate_actions_taken=["stopped", "inspector"],
+                   equipment_asset_involved=["crane", "hook", "beam"])),
+    dict(text="A visitor fainted in the reception area just now. The nurse gave first aid and she is recovering.",
+         want=dict(incident_type=["faint", "medical", "collapse"], incident_location=["reception"], date_time=["now"], immediate_actions_taken=["first aid"])),
+    dict(text="Okay, correction: the spill was not in lab four, it was in lab five, at eight AM, and we mopped it up with absorbent pads.",
+         want=dict(incident_type=["spill"], incident_location=["lab five", "lab 5"], date_time=["8", "eight"], immediate_actions_taken=["mop", "absorbent"])),
+    dict(text="Something happened in the warehouse.", want=dict(incident_location=["warehouse"]), expect_status="collecting",
+         empty=["severity_level", "persons_involved", "witness_information", "date_time", "immediate_actions_taken", "incident_type"]),
+]
+
+
 def run_llm(p):
-    return npu_runtime.run_llm(p)
+    raw = npu_runtime.run_llm(p)
+    if os.environ.get("GUARD") == "1":                 # prototype output guard (scripts/llm_guard.py), as an app-side filter would apply it
+        from llm_guard import guard
+        return guard(p, raw, grounding=os.environ.get("GUARD_RULES", "12") != "1")
+    return raw
 
 
 def norm(s):
@@ -139,7 +181,11 @@ def dialog():
 
 
 if __name__ == "__main__":
-    which = sys.argv[1:] or ["text", "speech", "noisy", "dialog"]
+    args = sys.argv[1:]
+    if "set2" in args:
+        CASES = CASES2
+        args = [x for x in args if x != "set2"]
+    which = args or ["text", "speech", "noisy", "dialog"]
     print("board:", npu_runtime.npu_status())
     if "text" in which:
         phase("typed narration -> LLM", None, False)
