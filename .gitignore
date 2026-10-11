@@ -60,3 +60,6 @@ runtime_state.json
 temp_audio/
 /whisper_dl/
 /certs/
+
+# downloaded/converted model files (large)
+llm_prep/
