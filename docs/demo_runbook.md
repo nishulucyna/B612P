@@ -160,7 +160,8 @@ Everything runs inside the **Incident Assistant** app on the HDK8650: speech rec
 
 1. Once, over USB: `powershell -ExecutionPolicy Bypass -File scripts\install_standalone.ps1` (pushes the models, installs the app and voice
    engine, grants the microphone, sets the default voice engine).
-2. After every board reboot: `adb shell setenforce 0` (the app reads models from /data/local/tmp), and close Chrome on the board.
+2. Optional after a board reboot: `adb shell setenforce 0`. The app works without it (tested with SELinux enforcing: Whisper-small and Gemma load
+   and run on the NPU); it only unlocks the live NPU counter in the top strip, which otherwise reads "counter not readable". Keep Chrome closed on the board.
 3. Unplug the laptop, turn Wi-Fi off if you like. Open **Incident Assistant**, wait about 40 s for the green bar.
 4. Tap the blue **microphone** and describe the incident (it stops by itself after a pause, or tap the red button), or tap **Type**.
    The top strip shows the live NPU counter and which model is working. The assistant answers on screen and aloud; it asks one
