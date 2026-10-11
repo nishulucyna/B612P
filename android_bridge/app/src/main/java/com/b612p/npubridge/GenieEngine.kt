@@ -39,6 +39,8 @@ class GenieEngine @JvmOverloads constructor(
     private val modelDir: File = File(ModelLoader.DEFAULT_ROOT, "llm"),
     /** Dev only, for the NPU-vs-CPU benchmark (scripts/npu_proof.py). Always NPU in the real app. */
     private val computeUnit: ComputeUnitValue = ComputeUnitValue.NPU,
+    /** Dev only: pick a specific .gguf in the model folder (model comparison). Null = model.gguf, else the first .gguf. */
+    private val modelFile: String? = null,
 ) : LlmEngine {
 
     @Volatile private var llm: LlmWrapper? = null
@@ -148,7 +150,9 @@ class GenieEngine @JvmOverloads constructor(
             // Greedy decoding: extraction should be repeatable. For the incident-extraction prompt the
             // output is constrained to exactly the 10 form fields (string or null), so a small model
             // cannot ramble, think aloud, or invent extra keys.
-            val sampler = SamplerConfig(temperature = 0f)
+            // topK = 1 makes it truly greedy: temperature 0 alone still left the SDK's default top-k/top-p sampling on, and
+            // the same prompt gave different extractions from run to run.
+            val sampler = SamplerConfig(temperature = 0f, topP = 1f, topK = 1, minP = 0f, seed = 42)
             if (grammar != null) {
                 sampler.grammarString = grammar
             }
@@ -249,7 +253,7 @@ class GenieEngine @JvmOverloads constructor(
     }
 
     private fun findModel(): File? {
-        val preferred = File(modelDir, "model.gguf")
+        val preferred = File(modelDir, modelFile ?: "model.gguf")
         if (preferred.isFile) {
             return preferred
         }

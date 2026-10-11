@@ -98,7 +98,8 @@ class MainActivity : Activity() {
         // starts the AI engines (and the optional laptop bridge); safe to call again
         startService(Intent(this, BridgeService::class.java)
             .putExtra(BridgeService.EXTRA_ALLOW_CPU_FALLBACK, intent.getBooleanExtra(BridgeService.EXTRA_ALLOW_CPU_FALLBACK, false))
-            .putExtra("llm_unit", intent.getStringExtra("llm_unit")))      // dev benchmark switch, see scripts/npu_proof.py
+            .putExtra("llm_unit", intent.getStringExtra("llm_unit"))        // dev benchmark switches, see scripts/npu_proof.py
+            .putExtra("llm_file", intent.getStringExtra("llm_file")))
     }
 
     private val tick = object : Runnable {

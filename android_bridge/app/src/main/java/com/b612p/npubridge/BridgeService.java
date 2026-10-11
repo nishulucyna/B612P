@@ -84,7 +84,8 @@ public class BridgeService extends Service {
             // Dev switch for the NPU-vs-CPU benchmark: --es llm_unit CPU (needs allow_cpu_fallback too).
             String unit = intent != null ? intent.getStringExtra("llm_unit") : null;
             final GenieEngine genie = new GenieEngine(this, allowCpu, new java.io.File(ModelLoader.DEFAULT_ROOT, "llm"),
-                    "CPU".equalsIgnoreCase(unit) ? com.geniex.sdk.bean.ComputeUnitValue.CPU : com.geniex.sdk.bean.ComputeUnitValue.NPU);
+                    "CPU".equalsIgnoreCase(unit) ? com.geniex.sdk.bean.ComputeUnitValue.CPU : com.geniex.sdk.bean.ComputeUnitValue.NPU,
+                    intent != null ? intent.getStringExtra("llm_file") : null);
             stt = whisper;
             llm = genie;
             // Model loading takes a while; keep the HTTP server (and /health) responsive meanwhile.
