@@ -25,6 +25,10 @@ object AppSession {
     @Volatile var lastAudioNote: String? = null
     /** Where the last submitted report was written on this device. */
     @Volatile var savedPath: String? = null
+    /** True while the current turn came from the microphone (so the processing card shows the speech step). */
+    @Volatile var voiceTurn = false
+    /** Fields the user corrected or filled by hand (shown as "Edited by you"). */
+    val edited: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
 
     /** Speech recognition on the NPU for a recorded WAV. */
     fun transcribe(wav: ByteArray): String {

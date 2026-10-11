@@ -162,10 +162,11 @@ Everything runs inside the **Incident Assistant** app on the HDK8650: speech rec
    engine, grants the microphone, sets the default voice engine).
 2. After every board reboot: `adb shell setenforce 0` (the app reads models from /data/local/tmp), and close Chrome on the board.
 3. Unplug the laptop, turn Wi-Fi off if you like. Open **Incident Assistant**, wait about 40 s for the green bar.
-4. Tap **Speak** and describe the incident (tap again to stop), or type and tap **Send**. The assistant answers on screen and aloud;
-   it asks one question at a time until the four required fields are present.
-5. Review: tap any field to correct it. **Confirm & submit report** saves the report as JSON (the 10 contract fields) in
-   `/sdcard/Android/data/com.b612p.npubridge/files/reports/`.
+4. Tap the blue **microphone** and describe the incident (it stops by itself after a pause, or tap the red button), or tap **Type**.
+   The top strip shows the live NPU counter and which model is working. The assistant answers on screen and aloud; it asks one
+   question at a time until the four required fields are present.
+5. Review: tap **Edit**, **Clear** or a severity chip on any field. **Confirm and submit report** saves the report as JSON (the 10 contract
+   fields) in `/sdcard/Android/data/com.b612p.npubridge/files/reports/`. **New** starts another report, **Undo** discards the last turn.
 
-The microphone needs the speaker's voice within about a metre; a headset mic is better in a noisy room. `Voice: on/off` mutes the replies.
+The microphone needs the speaker's voice within about a metre; a headset mic is better in a noisy room. The **Voice** button mutes the replies.
 Laptop mode (Streamlit UI + orchestrator) still works as described above.

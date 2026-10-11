@@ -19,8 +19,18 @@ class IncidentSession(private val llm: (String) -> String) {
     private val messages = ArrayList<ChatMessage>()
     private val history = ArrayList<Pair<IncidentState, Int>>()   // state and conversation length before each turn
 
-    @Synchronized fun state(): IncidentState = state
-    @Synchronized fun transcript(): List<ChatMessage> = messages.toList()
+    // The UI polls these every half second on the main thread, while a turn (model call, ~15 s) holds this object's lock.
+    // They read published snapshots instead of taking the lock, otherwise the screen freezes for the whole extraction.
+    @Volatile private var stateView: IncidentState = state
+    @Volatile private var transcriptView: List<ChatMessage> = emptyList()
+
+    fun state(): IncidentState = stateView
+    fun transcript(): List<ChatMessage> = transcriptView
+
+    private fun publish() {
+        stateView = state
+        transcriptView = messages.toList()
+    }
 
     private fun log(role: String, text: String) {
         messages.add(ChatMessage(role, text, System.currentTimeMillis()))
@@ -45,14 +55,14 @@ class IncidentSession(private val llm: (String) -> String) {
         log("user", text)
         val speech = state.speech()
         if (speech != null) log("assistant", speech)
-        return Turn(state, text, speech)
+        publish(); return Turn(state, text, speech)
     }
 
     /** The recogniser heard nothing usable: ask again without touching the report. */
     @Synchronized fun nothingHeard(): Turn {
         ensureOpen()
         log("assistant", IncidentBrain.RETRY_PROMPT)
-        return Turn(state, "", IncidentBrain.RETRY_PROMPT)
+        publish(); return Turn(state, "", IncidentBrain.RETRY_PROMPT)
     }
 
     /** Discard the last turn (e.g. it was misheard) and restore the state before it. */
@@ -64,7 +74,7 @@ class IncidentSession(private val llm: (String) -> String) {
         while (messages.size > length) messages.removeAt(messages.size - 1)
         val speech = "Okay, I discarded that. Please say it again."
         log("assistant", speech)
-        return Turn(state, null, speech)
+        publish(); return Turn(state, null, speech)
     }
 
     /**
@@ -85,7 +95,7 @@ class IncidentSession(private val llm: (String) -> String) {
             IncidentState(state.sessionId, "complete", emptyList(), null, fields,
                 ToolCall("populate_incident_form", fields, IncidentBrain.summaryFor(fields)))
         }
-        return Turn(state, null, null)
+        publish(); return Turn(state, null, null)
     }
 
     /** Submit the report, optionally with manual edits to the fields. Needs the 4 mandatory fields. */
@@ -100,13 +110,13 @@ class IncidentSession(private val llm: (String) -> String) {
         if (missing.isNotEmpty()) throw NotReadyToSubmitException(missing)
         state = IncidentState(state.sessionId, "submitted", emptyList(), null, fields,
             state.toolCall?.copy(arguments = fields))
-        return Turn(state, null, null)
+        publish(); return Turn(state, null, null)
     }
 
     @Synchronized fun reset(): Turn {
         history.clear()
         messages.clear()
         state = IncidentBrain.blankState()
-        return Turn(state, null, state.nextPrompt)
+        publish(); return Turn(state, null, state.nextPrompt)
     }
 }

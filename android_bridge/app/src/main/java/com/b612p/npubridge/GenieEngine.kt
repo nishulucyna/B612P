@@ -266,10 +266,11 @@ class GenieEngine @JvmOverloads constructor(
 
     companion object {
         /**
-         * Measured on the board (scripts/llm_thread_sweep.py, same output at every setting): 8 threads 13.6 s and 98 CPU-seconds per
-         * extraction, 2 threads 15.3 s and 29 CPU-seconds. The SDK's 8 pinned busy-polling threads just spin while the NPU works.
+         * Measured on the board (scripts/llm_thread_sweep.py, identical output at every setting), per extraction:
+         * 8 threads 13.6 s / 98 CPU-s, 4 threads 13.9 s / 52 CPU-s, 2 threads 15.3 s / 29 CPU-s. The SDK's 8 pinned busy-polling
+         * threads mostly spin while the NPU works, so 4 is the same speed for half the CPU. This is not a slowdown.
          */
-        const val DEFAULT_THREADS = 2
+        const val DEFAULT_THREADS = 4
 
         private const val TAG = "NpuBridge"
         private const val N_CTX = 2048       // prompt (~600 tokens) + JSON answer fit comfortably
